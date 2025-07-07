@@ -155,6 +155,9 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
         return '['.implode(',', $vector->getData()).']';
     }
 
+    /**
+     * @return float[]
+     */
     private function fromPgvector(string $vector): array
     {
         return json_decode($vector, true, 512, \JSON_THROW_ON_ERROR);
