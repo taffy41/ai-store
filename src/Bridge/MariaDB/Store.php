@@ -17,6 +17,7 @@ use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
+use Symfony\AI\Store\Exception\RuntimeException;
 use Symfony\AI\Store\InitializableStoreInterface;
 use Symfony\AI\Store\VectorStoreInterface;
 use Symfony\Component\Uid\Uuid;
@@ -42,7 +43,7 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
         private string $vectorFieldName,
     ) {
         if (!\extension_loaded('pdo')) {
-            throw new \RuntimeException('For using MariaDB as retrieval vector store, the PDO extension needs to be enabled.');
+            throw new RuntimeException('For using MariaDB as retrieval vector store, the PDO extension needs to be enabled.');
         }
     }
 
@@ -57,7 +58,7 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
     public static function fromDbal(Connection $connection, string $tableName, string $indexName = 'embedding', string $vectorFieldName = 'embedding'): self
     {
         if (!class_exists(Connection::class)) {
-            throw new \RuntimeException('For using MariaDB as retrieval vector store, the PDO extension needs to be enabled.');
+            throw new RuntimeException('For using MariaDB as retrieval vector store, the PDO extension needs to be enabled.');
         }
 
         $pdo = $connection->getNativeConnection();

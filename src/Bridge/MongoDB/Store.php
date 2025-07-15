@@ -21,6 +21,7 @@ use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
+use Symfony\AI\Store\Exception\RuntimeException;
 use Symfony\AI\Store\InitializableStoreInterface;
 use Symfony\AI\Store\VectorStoreInterface;
 use Symfony\Component\Uid\Uuid;
@@ -67,7 +68,7 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
         private LoggerInterface $logger = new NullLogger(),
     ) {
         if (!class_exists(Client::class)) {
-            throw new \RuntimeException('For using MongoDB Atlas as retrieval vector store, the mongodb/mongodb package is required. Try running "composer require mongodb/mongodb".');
+            throw new RuntimeException('For using MongoDB Atlas as retrieval vector store, the mongodb/mongodb package is required. Try running "composer require mongodb/mongodb".');
         }
     }
 
