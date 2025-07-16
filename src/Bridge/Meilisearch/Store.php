@@ -123,12 +123,13 @@ final readonly class Store implements InitializableStoreInterface, VectorStoreIn
      */
     private function convertToVectorDocument(array $data): VectorDocument
     {
-        return new VectorDocument(
-            id: Uuid::fromString($data['id']),
-            vector: !\array_key_exists($this->vectorFieldName, $data) || null === $data[$this->vectorFieldName]
-                ? new NullVector()
-                : new Vector($data[$this->vectorFieldName][$this->embedder]['embeddings']),
-            metadata: new Metadata($data),
-        );
+        $id = $data['id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data');
+        $vector = !\array_key_exists($this->vectorFieldName, $data) || null === $data[$this->vectorFieldName]
+            ? new NullVector() : new Vector($data[$this->vectorFieldName][$this->embedder]['embeddings']);
+        $score = $data['_rankingScore'] ?? null;
+
+        unset($data['id'], $data[$this->vectorFieldName], $data['_rankingScore']);
+
+        return new VectorDocument(Uuid::fromString($id), $vector, new Metadata($data), $score);
     }
 }
