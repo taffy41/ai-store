@@ -122,10 +122,6 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
 
     public function initialize(array $options = []): void
     {
-        if ([] !== $options) {
-            throw new InvalidArgumentException('No supported options');
-        }
-
         $this->connection->exec('CREATE EXTENSION IF NOT EXISTS vector');
 
         $this->connection->exec(
@@ -133,10 +129,11 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
                 'CREATE TABLE IF NOT EXISTS %s (
                     id UUID PRIMARY KEY,
                     metadata JSONB,
-                    %s vector(1536) NOT NULL
+                    %s vector(%d) NOT NULL
                 )',
                 $this->tableName,
                 $this->vectorFieldName,
+                $options['vector_size'] ?? 1536,
             ),
         );
         $this->connection->exec(
