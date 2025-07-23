@@ -113,7 +113,7 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
                     SQL,
                 $this->vectorFieldName,
                 $this->tableName,
-                null !== $minScore ? 'WHERE VEC_DISTANCE_EUCLIDEAN(%1$s, VEC_FromText(:embedding)) >= :minScore' : '',
+                null !== $minScore ? \sprintf('WHERE VEC_DISTANCE_EUCLIDEAN(%1$s, VEC_FromText(:embedding)) >= :minScore', $this->vectorFieldName) : '',
                 $options['limit'] ?? 5,
             ),
         );
