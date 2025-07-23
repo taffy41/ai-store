@@ -53,7 +53,9 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
     }
 
     /**
-     * @throws DBALException
+     * @throws RuntimeException         When PDO extension is not enabled
+     * @throws InvalidArgumentException When DBAL connection doesn't use PDO driver
+     * @throws DBALException            When DBAL operations fail (e.g., getting native connection)
      */
     public static function fromDbal(Connection $connection, string $tableName, string $indexName = 'embedding', string $vectorFieldName = 'embedding'): self
     {
