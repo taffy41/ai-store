@@ -120,6 +120,13 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
         return $documents;
     }
 
+    /**
+     * @param array{vector_type?: string, vector_size?: positive-int, index_method?: string, index_opclass?: string} $options
+     *
+     * Good configurations $options are:
+     * - For Mistral: ['vector_size' => 1024]
+     * - For Gemini: ['vector_type' => 'halfvec', 'vector_size' => 3072, 'index_method' => 'hnsw', 'index_opclass' => 'halfvec_cosine_ops']
+     */
     public function initialize(array $options = []): void
     {
         $this->connection->exec('CREATE EXTENSION IF NOT EXISTS vector');
@@ -129,20 +136,23 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
                 'CREATE TABLE IF NOT EXISTS %s (
                     id UUID PRIMARY KEY,
                     metadata JSONB,
-                    %s vector(%d) NOT NULL
+                    %s %s(%d) NOT NULL
                 )',
                 $this->tableName,
                 $this->vectorFieldName,
+                $options['vector_type'] ?? 'vector',
                 $options['vector_size'] ?? 1536,
             ),
         );
         $this->connection->exec(
             \sprintf(
-                'CREATE INDEX IF NOT EXISTS %s_%s_idx ON %s USING ivfflat (%s vector_cosine_ops)',
+                'CREATE INDEX IF NOT EXISTS %s_%s_idx ON %s USING %s (%s %s)',
                 $this->tableName,
                 $this->vectorFieldName,
                 $this->tableName,
+                $options['index_method'] ?? 'ivfflat',
                 $this->vectorFieldName,
+                $options['index_opclass'] ?? 'vector_cosine_ops',
             ),
         );
     }
