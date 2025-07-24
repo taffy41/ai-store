@@ -92,7 +92,20 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
      */
     public function query(Vector $vector, array $options = []): array
     {
+        $where = null;
+
         $maxScore = $options['maxScore'] ?? null;
+        if ($maxScore) {
+            $where = "WHERE ({$this->vectorFieldName} {$this->distance->getComparisonSign()} :embedding) <= :maxScore";
+        }
+
+        if ($options['where'] ?? false) {
+            if ($where) {
+                $where .= ' AND ('.$options['where'].')';
+            } else {
+                $where = 'WHERE '.$options['where'];
+            }
+        }
 
         $sql = \sprintf(<<<SQL
             SELECT id, %s AS embedding, metadata, (%s %s :embedding) AS score
@@ -105,13 +118,14 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
             $this->vectorFieldName,
             $this->distance->getComparisonSign(),
             $this->tableName,
-            null !== $maxScore ? "WHERE ({$this->vectorFieldName} {$this->distance->getComparisonSign()} :embedding) <= :maxScore" : '',
+            $where ?? '',
             $options['limit'] ?? 5,
         );
         $statement = $this->connection->prepare($sql);
 
         $params = [
             'embedding' => $this->toPgvector($vector),
+            ...$options['params'] ?? [],
         ];
         if (null !== $maxScore) {
             $params['maxScore'] = $maxScore;
