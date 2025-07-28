@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\AI\Store\Bridge\MariaDB;
+namespace Symfony\AI\Store\Bridge\MariaDb;
 
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\Exception as DBALException;
@@ -23,7 +23,7 @@ use Symfony\AI\Store\VectorStoreInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Requires MariaDB >=11.7.
+ * Requires MariaDb >=11.7.
  *
  * @see https://mariadb.org/rag-with-mariadb-vector/
  *
