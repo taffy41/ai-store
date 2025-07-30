@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\AI\Store\Bridge\SurrealDB;
+namespace Symfony\AI\Store\Bridge\SurrealDb;
 
 use Symfony\AI\Platform\Vector\NullVector;
 use Symfony\AI\Platform\Vector\Vector;
