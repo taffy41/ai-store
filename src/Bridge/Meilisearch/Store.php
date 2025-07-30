@@ -66,7 +66,7 @@ final readonly class Store implements InitializableStoreInterface, VectorStoreIn
     public function initialize(array $options = []): void
     {
         if ([] !== $options) {
-            throw new InvalidArgumentException('No supported options');
+            throw new InvalidArgumentException('No supported options.');
         }
 
         $this->request('POST', 'indexes', [
@@ -123,7 +123,7 @@ final readonly class Store implements InitializableStoreInterface, VectorStoreIn
      */
     private function convertToVectorDocument(array $data): VectorDocument
     {
-        $id = $data['id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data');
+        $id = $data['id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data.');
         $vector = !\array_key_exists($this->vectorFieldName, $data) || null === $data[$this->vectorFieldName]
             ? new NullVector() : new Vector($data[$this->vectorFieldName][$this->embedder]['embeddings']);
         $score = $data['_rankingScore'] ?? null;

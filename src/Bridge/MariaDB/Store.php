@@ -148,13 +148,13 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
     public function initialize(array $options = []): void
     {
         if ([] !== $options && !\array_key_exists('dimensions', $options)) {
-            throw new InvalidArgumentException('The only supported option is "dimensions"');
+            throw new InvalidArgumentException('The only supported option is "dimensions".');
         }
 
         $serverVersion = $this->connection->getAttribute(\PDO::ATTR_SERVER_VERSION);
 
         if (!str_contains((string) $serverVersion, 'MariaDB') || version_compare($serverVersion, '11.7.0') < 0) {
-            throw new InvalidArgumentException('You need MariaDB >=11.7 to use this feature');
+            throw new InvalidArgumentException('You need MariaDB >=11.7 to use this feature.');
         }
 
         $this->connection->exec(

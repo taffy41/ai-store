@@ -101,7 +101,7 @@ final readonly class Store implements InitializableStoreInterface, VectorStoreIn
     {
         $payload = $data[0];
 
-        $id = $payload['properties']['id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data');
+        $id = $payload['properties']['id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data.');
 
         $vector = !\array_key_exists($this->embeddingsField, $payload['properties']) || null === $payload['properties'][$this->embeddingsField]
             ? new NullVector()

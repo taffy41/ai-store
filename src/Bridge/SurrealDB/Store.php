@@ -124,7 +124,7 @@ final class Store implements InitializableStoreInterface, VectorStoreInterface
      */
     private function convertToVectorDocument(array $data): VectorDocument
     {
-        $id = $data['_metadata']['_id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data');
+        $id = $data['_metadata']['_id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data.');
 
         $vector = !\array_key_exists($this->vectorFieldName, $data) || null === $data[$this->vectorFieldName]
             ? new NullVector()

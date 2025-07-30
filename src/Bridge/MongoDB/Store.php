@@ -158,7 +158,7 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
     public function initialize(array $options = []): void
     {
         if ([] !== $options && !\array_key_exists('fields', $options)) {
-            throw new InvalidArgumentException('The only supported option is "fields"');
+            throw new InvalidArgumentException('The only supported option is "fields".');
         }
 
         try {
