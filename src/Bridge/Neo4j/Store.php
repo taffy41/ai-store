@@ -55,7 +55,7 @@ final readonly class Store implements InitializableStoreInterface, VectorStoreIn
         }
     }
 
-    public function query(Vector $vector, array $options = [], ?float $minScore = null): array
+    public function query(Vector $vector, array $options = []): array
     {
         $response = $this->request('POST', \sprintf('db/%s/query/v2', $this->databaseName), [
             'statement' => \sprintf('CALL db.index.vector.queryNodes("%s", 5, $vectors) YIELD node, score RETURN node, score', $this->vectorIndexName),

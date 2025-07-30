@@ -48,7 +48,7 @@ final readonly class Store implements InitializableStoreInterface, VectorStoreIn
         );
     }
 
-    public function query(Vector $vector, array $options = [], ?float $minScore = null): array
+    public function query(Vector $vector, array $options = []): array
     {
         $result = $this->request('POST', \sprintf('indexes/%s/search', $this->indexName), [
             'vector' => $vector->getData(),

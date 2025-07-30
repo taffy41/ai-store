@@ -49,7 +49,7 @@ final readonly class Store implements InitializableStoreInterface, VectorStoreIn
      *     offset?: positive-int
      * } $options
      */
-    public function query(Vector $vector, array $options = [], ?float $minScore = null): array
+    public function query(Vector $vector, array $options = []): array
     {
         $payload = [
             'vector' => $vector->getData(),

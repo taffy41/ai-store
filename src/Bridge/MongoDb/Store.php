@@ -103,11 +103,18 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
      * @param array{
      *     limit?: positive-int,
      *     numCandidates?: positive-int,
-     *     filter?: array<mixed>
+     *     filter?: array<mixed>,
+     *     minScore?: float,
      * } $options
      */
-    public function query(Vector $vector, array $options = [], ?float $minScore = null): array
+    public function query(Vector $vector, array $options = []): array
     {
+        $minScore = null;
+        if (\array_key_exists('minScore', $options)) {
+            $minScore = $options['minScore'];
+            unset($options['minScore']);
+        }
+
         $pipeline = [
             [
                 '$vectorSearch' => array_merge([

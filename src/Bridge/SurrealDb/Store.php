@@ -51,7 +51,7 @@ final class Store implements InitializableStoreInterface, VectorStoreInterface
         }
     }
 
-    public function query(Vector $vector, array $options = [], ?float $minScore = null): array
+    public function query(Vector $vector, array $options = []): array
     {
         $vectors = json_encode($vector->getData());
 

@@ -100,10 +100,13 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
     /**
      * @param array{
      *     limit?: positive-int,
+     *     maxScore?: float|null,
      * } $options
      */
-    public function query(Vector $vector, array $options = [], ?float $minScore = null): array
+    public function query(Vector $vector, array $options = []): array
     {
+        $maxScore = $options['maxScore'] ?? null;
+
         $statement = $this->connection->prepare(
             \sprintf(
                 <<<'SQL'
@@ -115,15 +118,15 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
                     SQL,
                 $this->vectorFieldName,
                 $this->tableName,
-                null !== $minScore ? \sprintf('WHERE VEC_DISTANCE_EUCLIDEAN(%1$s, VEC_FromText(:embedding)) >= :minScore', $this->vectorFieldName) : '',
+                null !== $maxScore ? \sprintf('WHERE VEC_DISTANCE_EUCLIDEAN(%1$s, VEC_FromText(:embedding)) <= :maxScore', $this->vectorFieldName) : '',
                 $options['limit'] ?? 5,
             ),
         );
 
         $params = ['embedding' => json_encode($vector->getData())];
 
-        if (null !== $minScore) {
-            $params['minScore'] = $minScore;
+        if (null !== $maxScore) {
+            $params['maxScore'] = $maxScore;
         }
 
         $documents = [];

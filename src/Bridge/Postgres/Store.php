@@ -87,12 +87,13 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
 
     /**
      * @param array<string, mixed> $options
-     * @param float|null           $minScore Minimum score to filter results (optional)
      *
      * @return VectorDocument[]
      */
-    public function query(Vector $vector, array $options = [], ?float $minScore = null): array
+    public function query(Vector $vector, array $options = []): array
     {
+        $maxScore = $options['maxScore'] ?? null;
+
         $sql = \sprintf(<<<SQL
             SELECT id, %s AS embedding, metadata, (%s %s :embedding) AS score
             FROM %s
@@ -104,7 +105,7 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
             $this->vectorFieldName,
             $this->distance->getComparisonSign(),
             $this->tableName,
-            null !== $minScore ? "WHERE ({$this->vectorFieldName} {$this->distance->getComparisonSign()} :embedding) >= :minScore" : '',
+            null !== $maxScore ? "WHERE ({$this->vectorFieldName} {$this->distance->getComparisonSign()} :embedding) <= :maxScore" : '',
             $options['limit'] ?? 5,
         );
         $statement = $this->connection->prepare($sql);
@@ -112,8 +113,8 @@ final readonly class Store implements VectorStoreInterface, InitializableStoreIn
         $params = [
             'embedding' => $this->toPgvector($vector),
         ];
-        if (null !== $minScore) {
-            $params['minScore'] = $minScore;
+        if (null !== $maxScore) {
+            $params['maxScore'] = $maxScore;
         }
 
         $statement->execute($params);
