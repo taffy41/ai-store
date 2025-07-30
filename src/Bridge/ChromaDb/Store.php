@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\AI\Store\Bridge\ChromaDB;
+namespace Symfony\AI\Store\Bridge\ChromaDb;
 
 use Codewithkyrian\ChromaDB\Client;
 use Symfony\AI\Platform\Vector\Vector;
