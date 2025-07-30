@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\AI\Store\Bridge\MongoDB;
+namespace Symfony\AI\Store\Bridge\MongoDb;
 
 use MongoDB\BSON\Binary;
 use MongoDB\Client;
