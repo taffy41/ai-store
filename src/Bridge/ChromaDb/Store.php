@@ -38,14 +38,18 @@ final readonly class Store implements StoreInterface
         $ids = [];
         $vectors = [];
         $metadata = [];
+        $originalDocuments = [];
         foreach ($documents as $document) {
             $ids[] = (string) $document->id;
             $vectors[] = $document->vector->getData();
-            $metadata[] = $document->metadata->getArrayCopy();
+            $metadataCopy = $document->metadata->getArrayCopy();
+            $originalDocuments[] = $document->metadata->getText() ?? '';
+            unset($metadataCopy[Metadata::KEY_TEXT]);
+            $metadata[] = $metadataCopy;
         }
 
         $collection = $this->client->getOrCreateCollection($this->collectionName);
-        $collection->add($ids, $vectors, $metadata);
+        $collection->add($ids, $vectors, $metadata, $originalDocuments);
     }
 
     public function query(Vector $vector, array $options = []): array
