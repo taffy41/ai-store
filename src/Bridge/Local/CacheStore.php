@@ -30,8 +30,8 @@ final readonly class CacheStore implements StoreInterface
         private DistanceCalculator $distanceCalculator = new DistanceCalculator(),
         private string $cacheKey = '_vectors',
     ) {
-        if (!interface_exists(CacheItemPoolInterface::class)) {
-            throw new RuntimeException('For using the CacheStore as vector store, a PSR-6 cache implementation is required. Try running "composer require symfony/cache" or another PSR-6 compatible cache.');
+        if (!interface_exists(CacheInterface::class)) {
+            throw new RuntimeException('For using the CacheStore as vector store, a symfony/contracts cache implementation is required. Try running "composer require symfony/cache" or another symfony/contracts compatible cache.');
         }
     }
 
@@ -62,7 +62,7 @@ final readonly class CacheStore implements StoreInterface
      */
     public function query(Vector $vector, array $options = []): array
     {
-        $documents = $this->cache->getItem($this->cacheKey)->get() ?? [];
+        $documents = $this->cache->get($this->cacheKey, static fn (): array => []);
 
         $vectorDocuments = array_map(static fn (array $document): VectorDocument => new VectorDocument(
             id: Uuid::fromString($document['id']),
