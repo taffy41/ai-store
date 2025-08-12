@@ -59,18 +59,6 @@ class Store implements VectorStoreInterface, InitializableStoreInterface
         $this->insertBatch($rows);
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    protected function formatVectorDocument(VectorDocument $document): array
-    {
-        return [
-            'id' => $document->id->toRfc4122(),
-            'metadata' => json_encode($document->metadata->getArrayCopy(), \JSON_THROW_ON_ERROR),
-            'embedding' => $document->vector->getData(),
-        ];
-    }
-
     public function query(Vector $vector, array $options = [], ?float $minScore = null): array
     {
         $sql = <<<'SQL'
@@ -111,6 +99,18 @@ class Store implements VectorStoreInterface, InitializableStoreInterface
         }
 
         return $documents;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function formatVectorDocument(VectorDocument $document): array
+    {
+        return [
+            'id' => $document->id->toRfc4122(),
+            'metadata' => json_encode($document->metadata->getArrayCopy(), \JSON_THROW_ON_ERROR),
+            'embedding' => $document->vector->getData(),
+        ];
     }
 
     /**
