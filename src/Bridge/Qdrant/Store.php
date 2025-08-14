@@ -52,7 +52,7 @@ final readonly class Store implements InitializableStoreInterface, VectorStoreIn
     public function query(Vector $vector, array $options = []): array
     {
         $payload = [
-            'vector' => $vector->getData(),
+            'query' => $vector->getData(),
             'with_payload' => true,
             'with_vector' => true,
         ];
