@@ -18,7 +18,7 @@ use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
 use Symfony\AI\Store\InitializableStoreInterface;
-use Symfony\AI\Store\VectorStoreInterface;
+use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -28,7 +28,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @see https://github.com/pgvector/pgvector
  */
-final readonly class Store implements VectorStoreInterface, InitializableStoreInterface
+final readonly class Store implements StoreInterface, InitializableStoreInterface
 {
     public function __construct(
         private \PDO $connection,

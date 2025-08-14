@@ -19,7 +19,7 @@ use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
 use Symfony\AI\Store\Exception\RuntimeException;
 use Symfony\AI\Store\InitializableStoreInterface;
-use Symfony\AI\Store\VectorStoreInterface;
+use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
@@ -29,7 +29,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @author Valtteri R <valtzu@gmail.com>
  */
-final readonly class Store implements VectorStoreInterface, InitializableStoreInterface
+final readonly class Store implements StoreInterface, InitializableStoreInterface
 {
     /**
      * @param string $tableName       The name of the table

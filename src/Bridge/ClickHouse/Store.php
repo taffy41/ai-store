@@ -17,7 +17,7 @@ use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\RuntimeException;
 use Symfony\AI\Store\InitializableStoreInterface;
-use Symfony\AI\Store\VectorStoreInterface;
+use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
@@ -25,7 +25,7 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 /**
  * @author Grégoire Pineau <lyrixx@lyrixx.info>
  */
-class Store implements VectorStoreInterface, InitializableStoreInterface
+class Store implements StoreInterface, InitializableStoreInterface
 {
     public function __construct(
         private readonly HttpClientInterface $httpClient,
