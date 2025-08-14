@@ -9,13 +9,14 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\AI\Store;
+namespace Symfony\AI\Store\Bridge\Local;
 
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\RuntimeException;
+use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Cache\CacheInterface;
 

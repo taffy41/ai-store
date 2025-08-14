@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\AI\Store;
+namespace Symfony\AI\Store\Bridge\Local;
 
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>

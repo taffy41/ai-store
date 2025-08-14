@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\AI\Store;
+namespace Symfony\AI\Store\Bridge\Local;
 
 use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\VectorDocument;
