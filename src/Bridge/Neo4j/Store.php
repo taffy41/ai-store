@@ -16,7 +16,7 @@ use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -24,7 +24,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-final readonly class Store implements InitializableStoreInterface, StoreInterface
+final readonly class Store implements ManagedStoreInterface, StoreInterface
 {
     public function __construct(
         private HttpClientInterface $httpClient,
@@ -39,6 +39,16 @@ final readonly class Store implements InitializableStoreInterface, StoreInterfac
         private string $embeddingsDistance = 'cosine',
         private bool $quantization = false,
     ) {
+    }
+
+    public function setup(array $options = []): void
+    {
+        $this->request('POST', \sprintf('db/%s/query/v2', $this->databaseName), [
+            'statement' => \sprintf(
+                'CREATE VECTOR INDEX %s IF NOT EXISTS FOR (n:%s) ON n.%s OPTIONS { indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: "%s", `vector.quantization.enabled`: %s}}',
+                $this->vectorIndexName, $this->nodeName, $this->embeddingsField, $this->embeddingsDimension, $this->embeddingsDistance, $this->quantization ? 'true' : 'false',
+            ),
+        ]);
     }
 
     public function add(VectorDocument ...$documents): void
@@ -67,13 +77,10 @@ final readonly class Store implements InitializableStoreInterface, StoreInterfac
         return array_map($this->convertToVectorDocument(...), $response['data']['values']);
     }
 
-    public function initialize(array $options = []): void
+    public function drop(): void
     {
         $this->request('POST', \sprintf('db/%s/query/v2', $this->databaseName), [
-            'statement' => \sprintf(
-                'CREATE VECTOR INDEX %s IF NOT EXISTS FOR (n:%s) ON n.%s OPTIONS { indexConfig: {`vector.dimensions`: %d, `vector.similarity_function`: "%s", `vector.quantization.enabled`: %s}}',
-                $this->vectorIndexName, $this->nodeName, $this->embeddingsField, $this->embeddingsDimension, $this->embeddingsDistance, $this->quantization ? 'true' : 'false',
-            ),
+            'statement' => 'MATCH (n) DETACH DELETE n',
         ]);
     }
 

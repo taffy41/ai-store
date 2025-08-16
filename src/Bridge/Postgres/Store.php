@@ -17,7 +17,7 @@ use Symfony\AI\Platform\Vector\VectorInterface;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -28,7 +28,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @see https://github.com/pgvector/pgvector
  */
-final readonly class Store implements StoreInterface, InitializableStoreInterface
+final readonly class Store implements ManagedStoreInterface, StoreInterface
 {
     public function __construct(
         private \PDO $connection,
@@ -36,6 +36,48 @@ final readonly class Store implements StoreInterface, InitializableStoreInterfac
         private string $vectorFieldName = 'embedding',
         private Distance $distance = Distance::L2,
     ) {
+    }
+
+    /**
+     * @param array{vector_type?: string, vector_size?: positive-int, index_method?: string, index_opclass?: string} $options
+     *
+     * Good configuration $options are:
+     * - For Mistral: ['vector_size' => 1024]
+     * - For Gemini: ['vector_type' => 'halfvec', 'vector_size' => 3072, 'index_method' => 'hnsw', 'index_opclass' => 'halfvec_cosine_ops']
+     */
+    public function setup(array $options = []): void
+    {
+        $this->connection->exec('CREATE EXTENSION IF NOT EXISTS vector');
+
+        $this->connection->exec(
+            \sprintf(
+                'CREATE TABLE IF NOT EXISTS %s (
+                    id UUID PRIMARY KEY,
+                    metadata JSONB,
+                    %s %s(%d) NOT NULL
+                )',
+                $this->tableName,
+                $this->vectorFieldName,
+                $options['vector_type'] ?? 'vector',
+                $options['vector_size'] ?? 1536,
+            ),
+        );
+        $this->connection->exec(
+            \sprintf(
+                'CREATE INDEX IF NOT EXISTS %s_%s_idx ON %s USING %s (%s %s)',
+                $this->tableName,
+                $this->vectorFieldName,
+                $this->tableName,
+                $options['index_method'] ?? 'ivfflat',
+                $this->vectorFieldName,
+                $options['index_opclass'] ?? 'vector_cosine_ops',
+            ),
+        );
+    }
+
+    public function drop(): void
+    {
+        $this->connection->exec(\sprintf('DROP TABLE IF EXISTS %s', $this->tableName));
     }
 
     public static function fromPdo(
@@ -144,43 +186,6 @@ final readonly class Store implements StoreInterface, InitializableStoreInterfac
         }
 
         return $documents;
-    }
-
-    /**
-     * @param array{vector_type?: string, vector_size?: positive-int, index_method?: string, index_opclass?: string} $options
-     *
-     * Good configurations $options are:
-     * - For Mistral: ['vector_size' => 1024]
-     * - For Gemini: ['vector_type' => 'halfvec', 'vector_size' => 3072, 'index_method' => 'hnsw', 'index_opclass' => 'halfvec_cosine_ops']
-     */
-    public function initialize(array $options = []): void
-    {
-        $this->connection->exec('CREATE EXTENSION IF NOT EXISTS vector');
-
-        $this->connection->exec(
-            \sprintf(
-                'CREATE TABLE IF NOT EXISTS %s (
-                    id UUID PRIMARY KEY,
-                    metadata JSONB,
-                    %s %s(%d) NOT NULL
-                )',
-                $this->tableName,
-                $this->vectorFieldName,
-                $options['vector_type'] ?? 'vector',
-                $options['vector_size'] ?? 1536,
-            ),
-        );
-        $this->connection->exec(
-            \sprintf(
-                'CREATE INDEX IF NOT EXISTS %s_%s_idx ON %s USING %s (%s %s)',
-                $this->tableName,
-                $this->vectorFieldName,
-                $this->tableName,
-                $options['index_method'] ?? 'ivfflat',
-                $this->vectorFieldName,
-                $options['index_opclass'] ?? 'vector_cosine_ops',
-            ),
-        );
     }
 
     private function toPgvector(VectorInterface $vector): string

@@ -15,7 +15,9 @@ use Psr\Cache\CacheItemPoolInterface;
 use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
+use Symfony\AI\Store\Exception\InvalidArgumentException;
 use Symfony\AI\Store\Exception\RuntimeException;
+use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -23,7 +25,7 @@ use Symfony\Contracts\Cache\CacheInterface;
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-final readonly class CacheStore implements StoreInterface
+final readonly class CacheStore implements ManagedStoreInterface, StoreInterface
 {
     public function __construct(
         private CacheInterface&CacheItemPoolInterface $cache,
@@ -33,6 +35,15 @@ final readonly class CacheStore implements StoreInterface
         if (!interface_exists(CacheInterface::class)) {
             throw new RuntimeException('For using the CacheStore as vector store, a symfony/contracts cache implementation is required. Try running "composer require symfony/cache" or another symfony/contracts compatible cache.');
         }
+    }
+
+    public function setup(array $options = []): void
+    {
+        if ([] !== $options) {
+            throw new InvalidArgumentException('No supported options.');
+        }
+
+        $this->cache->clear();
     }
 
     public function add(VectorDocument ...$documents): void
@@ -71,5 +82,10 @@ final readonly class CacheStore implements StoreInterface
         ), $documents);
 
         return $this->distanceCalculator->calculate($vectorDocuments, $vector, $options['maxItems'] ?? null);
+    }
+
+    public function drop(): void
+    {
+        $this->cache->clear();
     }
 }

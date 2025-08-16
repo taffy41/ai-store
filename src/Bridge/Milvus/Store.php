@@ -16,7 +16,7 @@ use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -24,7 +24,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-final readonly class Store implements InitializableStoreInterface, StoreInterface
+final readonly class Store implements ManagedStoreInterface, StoreInterface
 {
     public function __construct(
         private HttpClientInterface $httpClient,
@@ -38,40 +38,12 @@ final readonly class Store implements InitializableStoreInterface, StoreInterfac
     ) {
     }
 
-    public function add(VectorDocument ...$documents): void
-    {
-        $this->request('POST', 'v2/vectordb/entities/insert', [
-            'collectionName' => $this->collection,
-            'data' => array_map($this->convertToIndexableArray(...), $documents),
-        ]);
-    }
-
-    public function query(Vector $vector, array $options = []): array
-    {
-        $payload = [
-            'collectionName' => $this->collection,
-            'data' => [
-                $vector->getData(),
-            ],
-            'annsField' => $this->vectorFieldName,
-            'outputFields' => ['id', '_metadata', $this->vectorFieldName],
-        ];
-
-        if (isset($options['limit'])) {
-            $payload['limit'] = $options['limit'];
-        }
-
-        $documents = $this->request('POST', 'v2/vectordb/entities/search', $payload);
-
-        return array_map($this->convertToVectorDocument(...), $documents['data']);
-    }
-
     /**
      * @param array{
      *     forceDatabaseCreation?: bool,
      * } $options
      */
-    public function initialize(array $options = []): void
+    public function setup(array $options = []): void
     {
         if (\array_key_exists('forceDatabaseCreation', $options) && $options['forceDatabaseCreation']) {
             $this->request('POST', 'v2/vectordb/databases/create', [
@@ -117,6 +89,41 @@ final readonly class Store implements InitializableStoreInterface, StoreInterfac
                     'indexType' => 'AUTOINDEX',
                 ],
             ],
+        ]);
+    }
+
+    public function add(VectorDocument ...$documents): void
+    {
+        $this->request('POST', 'v2/vectordb/entities/insert', [
+            'collectionName' => $this->collection,
+            'data' => array_map($this->convertToIndexableArray(...), $documents),
+        ]);
+    }
+
+    public function query(Vector $vector, array $options = []): array
+    {
+        $payload = [
+            'collectionName' => $this->collection,
+            'data' => [
+                $vector->getData(),
+            ],
+            'annsField' => $this->vectorFieldName,
+            'outputFields' => ['id', '_metadata', $this->vectorFieldName],
+        ];
+
+        if (isset($options['limit'])) {
+            $payload['limit'] = $options['limit'];
+        }
+
+        $documents = $this->request('POST', 'v2/vectordb/entities/search', $payload);
+
+        return array_map($this->convertToVectorDocument(...), $documents['data']);
+    }
+
+    public function drop(): void
+    {
+        $this->request('POST', 'v2/vectordb/databases/drop', [
+            'dbName' => $this->database,
         ]);
     }
 

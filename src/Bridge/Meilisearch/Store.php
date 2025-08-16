@@ -16,7 +16,7 @@ use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -24,7 +24,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-final readonly class Store implements InitializableStoreInterface, StoreInterface
+final readonly class Store implements ManagedStoreInterface, StoreInterface
 {
     /**
      * @param string $embedder        The name of the embedder where vectors are stored
@@ -39,6 +39,27 @@ final readonly class Store implements InitializableStoreInterface, StoreInterfac
         private string $vectorFieldName = '_vectors',
         private int $embeddingsDimension = 1536,
     ) {
+    }
+
+    public function setup(array $options = []): void
+    {
+        if ([] !== $options) {
+            throw new InvalidArgumentException('No supported options.');
+        }
+
+        $this->request('POST', 'indexes', [
+            'uid' => $this->indexName,
+            'primaryKey' => 'id',
+        ]);
+
+        $this->request('PATCH', \sprintf('indexes/%s/settings', $this->indexName), [
+            'embedders' => [
+                $this->embedder => [
+                    'source' => 'userProvided',
+                    'dimensions' => $this->embeddingsDimension,
+                ],
+            ],
+        ]);
     }
 
     public function add(VectorDocument ...$documents): void
@@ -63,25 +84,9 @@ final readonly class Store implements InitializableStoreInterface, StoreInterfac
         return array_map($this->convertToVectorDocument(...), $result['hits']);
     }
 
-    public function initialize(array $options = []): void
+    public function drop(): void
     {
-        if ([] !== $options) {
-            throw new InvalidArgumentException('No supported options.');
-        }
-
-        $this->request('POST', 'indexes', [
-            'uid' => $this->indexName,
-            'primaryKey' => 'id',
-        ]);
-
-        $this->request('PATCH', \sprintf('indexes/%s/settings', $this->indexName), [
-            'embedders' => [
-                $this->embedder => [
-                    'source' => 'userProvided',
-                    'dimensions' => $this->embeddingsDimension,
-                ],
-            ],
-        ]);
+        $this->request('DELETE', \sprintf('indexes/%s', $this->indexName), []);
     }
 
     /**

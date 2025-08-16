@@ -16,7 +16,7 @@ use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -24,7 +24,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-final readonly class Store implements InitializableStoreInterface, StoreInterface
+final readonly class Store implements ManagedStoreInterface, StoreInterface
 {
     public function __construct(
         private HttpClientInterface $httpClient,
@@ -34,6 +34,26 @@ final readonly class Store implements InitializableStoreInterface, StoreInterfac
         private int $embeddingsDimension = 1536,
         private string $embeddingsDistance = 'Cosine',
     ) {
+    }
+
+    public function setup(array $options = []): void
+    {
+        if ([] !== $options) {
+            throw new InvalidArgumentException('No supported options.');
+        }
+
+        $collectionExistResponse = $this->request('GET', \sprintf('collections/%s/exists', $this->collectionName));
+
+        if ($collectionExistResponse['result']['exists']) {
+            return;
+        }
+
+        $this->request('PUT', \sprintf('collections/%s', $this->collectionName), [
+            'vectors' => [
+                'size' => $this->embeddingsDimension,
+                'distance' => $this->embeddingsDistance,
+            ],
+        ]);
     }
 
     public function add(VectorDocument ...$documents): void
@@ -70,24 +90,9 @@ final readonly class Store implements InitializableStoreInterface, StoreInterfac
         return array_map($this->convertToVectorDocument(...), $response['result']['points']);
     }
 
-    public function initialize(array $options = []): void
+    public function drop(): void
     {
-        if ([] !== $options) {
-            throw new InvalidArgumentException('No supported options.');
-        }
-
-        $collectionExistResponse = $this->request('GET', \sprintf('collections/%s/exists', $this->collectionName));
-
-        if ($collectionExistResponse['result']['exists']) {
-            return;
-        }
-
-        $this->request('PUT', \sprintf('collections/%s', $this->collectionName), [
-            'vectors' => [
-                'size' => $this->embeddingsDimension,
-                'distance' => $this->embeddingsDistance,
-            ],
-        ]);
+        $this->request('DELETE', \sprintf('collections/%s', $this->collectionName));
     }
 
     /**

@@ -18,7 +18,7 @@ use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
 use Symfony\AI\Store\Exception\RuntimeException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -29,7 +29,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @author Valtteri R <valtzu@gmail.com>
  */
-final readonly class Store implements StoreInterface, InitializableStoreInterface
+final readonly class Store implements ManagedStoreInterface, StoreInterface
 {
     /**
      * @param string $tableName       The name of the table
@@ -45,6 +45,44 @@ final readonly class Store implements StoreInterface, InitializableStoreInterfac
         if (!\extension_loaded('pdo')) {
             throw new RuntimeException('For using MariaDB as retrieval vector store, the PDO extension needs to be enabled.');
         }
+    }
+
+    /**
+     * @param array{dimensions?: positive-int} $options
+     */
+    public function setup(array $options = []): void
+    {
+        if ([] !== $options && !\array_key_exists('dimensions', $options)) {
+            throw new InvalidArgumentException('The only supported option is "dimensions".');
+        }
+
+        $serverVersion = $this->connection->getAttribute(\PDO::ATTR_SERVER_VERSION);
+
+        if (!str_contains((string) $serverVersion, 'MariaDB') || version_compare($serverVersion, '11.7.0') < 0) {
+            throw new InvalidArgumentException('You need MariaDB >=11.7 to use this feature.');
+        }
+
+        $this->connection->exec(
+            \sprintf(
+                <<<'SQL'
+                    CREATE TABLE IF NOT EXISTS %1$s (
+                        id BINARY(16) NOT NULL PRIMARY KEY,
+                        metadata JSON,
+                        %2$s VECTOR(%4$d) NOT NULL,
+                        VECTOR INDEX %3$s (%2$s)
+                    )
+                    SQL,
+                $this->tableName,
+                $this->vectorFieldName,
+                $this->indexName,
+                $options['dimensions'] ?? 1536,
+            ),
+        );
+    }
+
+    public function drop(): void
+    {
+        $this->connection->exec(\sprintf('DROP TABLE IF EXISTS %s', $this->tableName));
     }
 
     public static function fromPdo(\PDO $connection, string $tableName, string $indexName = 'embedding', string $vectorFieldName = 'embedding'): self
@@ -143,38 +181,5 @@ final readonly class Store implements StoreInterface, InitializableStoreInterfac
         }
 
         return $documents;
-    }
-
-    /**
-     * @param array{dimensions?: positive-int} $options
-     */
-    public function initialize(array $options = []): void
-    {
-        if ([] !== $options && !\array_key_exists('dimensions', $options)) {
-            throw new InvalidArgumentException('The only supported option is "dimensions".');
-        }
-
-        $serverVersion = $this->connection->getAttribute(\PDO::ATTR_SERVER_VERSION);
-
-        if (!str_contains((string) $serverVersion, 'MariaDB') || version_compare($serverVersion, '11.7.0') < 0) {
-            throw new InvalidArgumentException('You need MariaDB >=11.7 to use this feature.');
-        }
-
-        $this->connection->exec(
-            \sprintf(
-                <<<'SQL'
-                    CREATE TABLE IF NOT EXISTS %1$s (
-                        id BINARY(16) NOT NULL PRIMARY KEY,
-                        metadata JSON,
-                        %2$s VECTOR(%4$d) NOT NULL,
-                        VECTOR INDEX %3$s (%2$s)
-                    )
-                    SQL,
-                $this->tableName,
-                $this->vectorFieldName,
-                $this->indexName,
-                $options['dimensions'] ?? 1536,
-            ),
-        );
     }
 }

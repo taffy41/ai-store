@@ -16,7 +16,7 @@ use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -24,7 +24,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-final readonly class Store implements InitializableStoreInterface, StoreInterface
+final readonly class Store implements ManagedStoreInterface, StoreInterface
 {
     public function __construct(
         private HttpClientInterface $httpClient,
@@ -36,29 +36,7 @@ final readonly class Store implements InitializableStoreInterface, StoreInterfac
     ) {
     }
 
-    public function add(VectorDocument ...$documents): void
-    {
-        foreach ($documents as $document) {
-            $this->request('POST', \sprintf('collections/%s/documents', $this->collection), $this->convertToIndexableArray($document));
-        }
-    }
-
-    public function query(Vector $vector, array $options = []): array
-    {
-        $documents = $this->request('POST', 'multi_search', [
-            'searches' => [
-                [
-                    'collection' => $this->collection,
-                    'q' => '*',
-                    'vector_query' => \sprintf('%s:([%s], k:%d)', $this->vectorFieldName, implode(', ', $vector->getData()), $options['k'] ?? 10),
-                ],
-            ],
-        ]);
-
-        return array_map($this->convertToVectorDocument(...), $documents['results'][0]['hits']);
-    }
-
-    public function initialize(array $options = []): void
+    public function setup(array $options = []): void
     {
         if ([] !== $options) {
             throw new InvalidArgumentException('No supported options.');
@@ -84,6 +62,33 @@ final readonly class Store implements InitializableStoreInterface, StoreInterfac
         ]);
     }
 
+    public function add(VectorDocument ...$documents): void
+    {
+        foreach ($documents as $document) {
+            $this->request('POST', \sprintf('collections/%s/documents', $this->collection), $this->convertToIndexableArray($document));
+        }
+    }
+
+    public function query(Vector $vector, array $options = []): array
+    {
+        $documents = $this->request('POST', 'multi_search', [
+            'searches' => [
+                [
+                    'collection' => $this->collection,
+                    'q' => '*',
+                    'vector_query' => \sprintf('%s:([%s], k:%d)', $this->vectorFieldName, implode(', ', $vector->getData()), $options['k'] ?? 10),
+                ],
+            ],
+        ]);
+
+        return array_map($this->convertToVectorDocument(...), $documents['results'][0]['hits']);
+    }
+
+    public function drop(): void
+    {
+        $this->request('DELETE', \sprintf('collections/%s', $this->collection), []);
+    }
+
     /**
      * @param array<string, mixed> $payload
      *
@@ -96,7 +101,7 @@ final readonly class Store implements InitializableStoreInterface, StoreInterfac
             'headers' => [
                 'X-TYPESENSE-API-KEY' => $this->apiKey,
             ],
-            'json' => $payload,
+            'json' => [] !== $payload ? $payload : new \stdClass(),
         ]);
 
         return $result->toArray();

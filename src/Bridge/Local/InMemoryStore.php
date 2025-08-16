@@ -13,12 +13,14 @@ namespace Symfony\AI\Store\Bridge\Local;
 
 use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\VectorDocument;
+use Symfony\AI\Store\Exception\InvalidArgumentException;
+use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
 
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-final class InMemoryStore implements StoreInterface
+final class InMemoryStore implements ManagedStoreInterface, StoreInterface
 {
     /**
      * @var VectorDocument[]
@@ -28,6 +30,15 @@ final class InMemoryStore implements StoreInterface
     public function __construct(
         private readonly DistanceCalculator $distanceCalculator = new DistanceCalculator(),
     ) {
+    }
+
+    public function setup(array $options = []): void
+    {
+        if ([] !== $options) {
+            throw new InvalidArgumentException('No supported options.');
+        }
+
+        $this->drop();
     }
 
     public function add(VectorDocument ...$documents): void
@@ -43,5 +54,10 @@ final class InMemoryStore implements StoreInterface
     public function query(Vector $vector, array $options = []): array
     {
         return $this->distanceCalculator->calculate($this->documents, $vector, $options['maxItems'] ?? null);
+    }
+
+    public function drop(): void
+    {
+        $this->documents = [];
     }
 }

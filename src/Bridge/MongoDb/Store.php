@@ -22,7 +22,7 @@ use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
 use Symfony\AI\Store\Exception\RuntimeException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 
@@ -49,7 +49,7 @@ use Symfony\Component\Uid\Uuid;
  *
  * @author Oskar Stark <oskarstark@googlemail.com>
  */
-final readonly class Store implements StoreInterface, InitializableStoreInterface
+final readonly class Store implements ManagedStoreInterface, StoreInterface
 {
     /**
      * @param string $databaseName    The name of the database
@@ -70,6 +70,42 @@ final readonly class Store implements StoreInterface, InitializableStoreInterfac
         if (!class_exists(Client::class)) {
             throw new RuntimeException('For using MongoDB Atlas as retrieval vector store, the mongodb/mongodb package is required. Try running "composer require mongodb/mongodb".');
         }
+    }
+
+    /**
+     * @param array{fields?: array<mixed>} $options
+     */
+    public function setup(array $options = []): void
+    {
+        if ([] !== $options && !\array_key_exists('fields', $options)) {
+            throw new InvalidArgumentException('The only supported option is "fields".');
+        }
+
+        try {
+            $this->getCollection()->createSearchIndex(
+                [
+                    'fields' => array_merge([
+                        [
+                            'numDimensions' => 1536,
+                            'path' => $this->vectorFieldName,
+                            'similarity' => 'euclidean',
+                            'type' => 'vector',
+                        ],
+                    ], $options['fields'] ?? []),
+                ],
+                [
+                    'name' => $this->indexName,
+                    'type' => 'vectorSearch',
+                ],
+            );
+        } catch (CommandException $e) {
+            $this->logger->warning($e->getMessage());
+        }
+    }
+
+    public function drop(): void
+    {
+        $this->getCollection()->drop();
     }
 
     public function add(VectorDocument ...$documents): void
@@ -157,37 +193,6 @@ final readonly class Store implements StoreInterface, InitializableStoreInterfac
         }
 
         return $documents;
-    }
-
-    /**
-     * @param array{fields?: array<mixed>} $options
-     */
-    public function initialize(array $options = []): void
-    {
-        if ([] !== $options && !\array_key_exists('fields', $options)) {
-            throw new InvalidArgumentException('The only supported option is "fields".');
-        }
-
-        try {
-            $this->getCollection()->createSearchIndex(
-                [
-                    'fields' => array_merge([
-                        [
-                            'numDimensions' => 1536,
-                            'path' => $this->vectorFieldName,
-                            'similarity' => 'euclidean',
-                            'type' => 'vector',
-                        ],
-                    ], $options['fields'] ?? []),
-                ],
-                [
-                    'name' => $this->indexName,
-                    'type' => 'vectorSearch',
-                ],
-            );
-        } catch (CommandException $e) {
-            $this->logger->warning($e->getMessage());
-        }
     }
 
     private function getCollection(): Collection

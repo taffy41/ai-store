@@ -17,7 +17,7 @@ use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
 use Symfony\AI\Store\Exception\RuntimeException;
-use Symfony\AI\Store\InitializableStoreInterface;
+use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
@@ -25,7 +25,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-final class Store implements InitializableStoreInterface, StoreInterface
+final class Store implements ManagedStoreInterface, StoreInterface
 {
     private string $authenticationToken = '';
 
@@ -42,6 +42,16 @@ final class Store implements InitializableStoreInterface, StoreInterface
         private readonly int $embeddingsDimension = 1536,
         private readonly bool $isNamespacedUser = false,
     ) {
+    }
+
+    public function setup(array $options = []): void
+    {
+        $this->authenticate();
+
+        $this->request('POST', 'sql', \sprintf(
+            'DEFINE INDEX %s_vectors ON %s FIELDS %s MTREE DIMENSION %d DIST %s TYPE F32',
+            $this->table, $this->table, $this->vectorFieldName, $this->embeddingsDimension, $this->strategy
+        ));
     }
 
     public function add(VectorDocument ...$documents): void
@@ -63,14 +73,9 @@ final class Store implements InitializableStoreInterface, StoreInterface
         return array_map($this->convertToVectorDocument(...), $results[0]['result']);
     }
 
-    public function initialize(array $options = []): void
+    public function drop(): void
     {
-        $this->authenticate();
-
-        $this->request('POST', 'sql', \sprintf(
-            'DEFINE INDEX %s_vectors ON %s FIELDS %s MTREE DIMENSION %d DIST %s TYPE F32',
-            $this->table, $this->table, $this->vectorFieldName, $this->embeddingsDimension, $this->strategy
-        ));
+        $this->request('DELETE', \sprintf('key/%s', $this->table), []);
     }
 
     /**
