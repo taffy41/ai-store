@@ -52,12 +52,17 @@ final readonly class Store implements StoreInterface
         $collection->add($ids, $vectors, $metadata, $originalDocuments);
     }
 
+    /**
+     * @param array{where?: array<string, string>, whereDocument?: array<string, mixed>} $options
+     */
     public function query(Vector $vector, array $options = []): array
     {
         $collection = $this->client->getOrCreateCollection($this->collectionName);
         $queryResponse = $collection->query(
             queryEmbeddings: [$vector->getData()],
             nResults: 4,
+            where: $options['where'] ?? null,
+            whereDocument: $options['whereDocument'] ?? null,
         );
 
         $documents = [];
