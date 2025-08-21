@@ -173,7 +173,7 @@ class Store implements ManagedStoreInterface, StoreInterface
         if (200 !== $response->getStatusCode()) {
             $content = $response->getContent(false);
 
-            throw new RuntimeException("Could not insert data into ClickHouse. Http status code: {$response->getStatusCode()}. Response: {$content}.");
+            throw new RuntimeException(\sprintf('Could not insert data into ClickHouse. Http status code: %d. Response: "%s".', $response->getStatusCode(), $content));
         }
     }
 
