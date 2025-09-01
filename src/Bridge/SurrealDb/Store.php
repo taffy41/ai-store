@@ -75,6 +75,8 @@ final class Store implements ManagedStoreInterface, StoreInterface
 
     public function drop(): void
     {
+        $this->authenticate();
+
         $this->request('DELETE', \sprintf('key/%s', $this->table), []);
     }
 
@@ -87,9 +89,13 @@ final class Store implements ManagedStoreInterface, StoreInterface
     {
         $url = \sprintf('%s/%s', $this->endpointUrl, $endpoint);
 
-        $finalPayload = [
-            'json' => $payload,
-        ];
+        $finalPayload = [];
+
+        if (\is_array($payload) && [] !== $payload) {
+            $finalPayload = [
+                'body' => $payload,
+            ];
+        }
 
         if (\is_string($payload)) {
             $finalPayload = [
@@ -97,15 +103,18 @@ final class Store implements ManagedStoreInterface, StoreInterface
             ];
         }
 
-        $response = $this->httpClient->request($method, $url, array_merge($finalPayload, [
-            'headers' => [
-                'Accept' => 'application/json',
-                'Content-Type' => 'application/json',
-                'Surreal-NS' => $this->namespace,
-                'Surreal-DB' => $this->database,
-                'Authorization' => \sprintf('Bearer %s', $this->authenticationToken),
+        $response = $this->httpClient->request($method, $url, [
+            ...$finalPayload,
+            ...[
+                'headers' => [
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json',
+                    'Surreal-NS' => $this->namespace,
+                    'Surreal-DB' => $this->database,
+                    'Authorization' => \sprintf('Bearer %s', $this->authenticationToken),
+                ],
             ],
-        ]));
+        ]);
 
         return $response->toArray();
     }
