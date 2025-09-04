@@ -129,7 +129,8 @@ final readonly class Store implements ManagedStoreInterface, StoreInterface
         $id = $document['id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data.');
 
         $vector = !\array_key_exists($this->vectorFieldName, $document) || null === $document[$this->vectorFieldName]
-            ? new NullVector() : new Vector($document[$this->vectorFieldName]);
+            ? new NullVector()
+            : new Vector($document[$this->vectorFieldName]);
 
         $score = $data['vector_distance'] ?? null;
 
