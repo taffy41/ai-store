@@ -65,6 +65,7 @@ final readonly class Store implements ManagedStoreInterface, StoreInterface
 
     /**
      * @param array{
+     *     filter?: array<string, mixed>,
      *     limit?: positive-int,
      *     offset?: positive-int
      * } $options
@@ -76,6 +77,10 @@ final readonly class Store implements ManagedStoreInterface, StoreInterface
             'with_payload' => true,
             'with_vector' => true,
         ];
+
+        if (\array_key_exists('filter', $options)) {
+            $payload['filter'] = $options['filter'];
+        }
 
         if (\array_key_exists('limit', $options)) {
             $payload['limit'] = $options['limit'];
