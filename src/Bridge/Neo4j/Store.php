@@ -29,9 +29,9 @@ final readonly class Store implements ManagedStoreInterface, StoreInterface
     public function __construct(
         private HttpClientInterface $httpClient,
         private string $endpointUrl,
-        #[\SensitiveParameter] private string $username,
+        private string $username,
         #[\SensitiveParameter] private string $password,
-        #[\SensitiveParameter] private string $databaseName,
+        private string $databaseName,
         private string $vectorIndexName,
         private string $nodeName,
         private string $embeddingsField = 'embeddings',

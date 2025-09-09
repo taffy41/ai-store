@@ -32,10 +32,10 @@ final class Store implements ManagedStoreInterface, StoreInterface
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly string $endpointUrl,
-        #[\SensitiveParameter] private readonly string $user,
+        private readonly string $user,
         #[\SensitiveParameter] private readonly string $password,
-        #[\SensitiveParameter] private readonly string $namespace,
-        #[\SensitiveParameter] private readonly string $database,
+        private readonly string $namespace,
+        private readonly string $database,
         private readonly string $table = 'vectors',
         private readonly string $vectorFieldName = '_vectors',
         private readonly string $strategy = 'cosine',

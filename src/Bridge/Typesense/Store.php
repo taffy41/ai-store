@@ -30,7 +30,7 @@ final readonly class Store implements ManagedStoreInterface, StoreInterface
         private HttpClientInterface $httpClient,
         private string $endpointUrl,
         #[\SensitiveParameter] private string $apiKey,
-        #[\SensitiveParameter] private string $collection,
+        private string $collection,
         private string $vectorFieldName = '_vectors',
         private int $embeddingsDimension = 1536,
     ) {
