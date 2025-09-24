@@ -127,11 +127,6 @@ final readonly class Store implements ManagedStoreInterface, StoreInterface
         }
     }
 
-    /**
-     * @param array<string, mixed> $options
-     *
-     * @return VectorDocument[]
-     */
     public function query(Vector $vector, array $options = []): array
     {
         $where = null;
