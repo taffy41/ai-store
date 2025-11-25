@@ -36,7 +36,7 @@
         "php": ">=8.2",
         "ext-fileinfo": "*",
         "psr/log": "^3.0",
-        "symfony/ai-platform": "@dev as 0.1.0",
+        "symfony/ai-platform": "^0.3",
         "symfony/clock": "^6.4|^7.3|^8.0",
         "symfony/http-client": "^6.4|^7.3|^8.0",
         "symfony/polyfill-php83": "^1.32",
