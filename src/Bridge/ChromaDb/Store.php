@@ -70,6 +70,7 @@ final class Store implements StoreInterface
                 id: Uuid::fromString($queryResponse->ids[0][$i]),
                 vector: new Vector($queryResponse->embeddings[0][$i]),
                 metadata: new Metadata($queryResponse->metadatas[0][$i]),
+                score: $queryResponse->distances[0][$i] ?? null,
             );
         }
     }
