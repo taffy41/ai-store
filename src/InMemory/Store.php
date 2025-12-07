@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\AI\Store\Bridge\InMemory;
+namespace Symfony\AI\Store\InMemory;
 
 use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Distance\DistanceCalculator;
