@@ -13,6 +13,7 @@ namespace Symfony\AI\Store\Bridge\Local;
 
 use Psr\Cache\CacheItemPoolInterface;
 use Symfony\AI\Platform\Vector\Vector;
+use Symfony\AI\Store\Distance\DistanceCalculator;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;

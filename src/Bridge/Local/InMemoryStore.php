@@ -12,6 +12,7 @@
 namespace Symfony\AI\Store\Bridge\Local;
 
 use Symfony\AI\Platform\Vector\Vector;
+use Symfony\AI\Store\Distance\DistanceCalculator;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
 use Symfony\AI\Store\ManagedStoreInterface;
