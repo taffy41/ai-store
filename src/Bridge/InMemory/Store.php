@@ -9,7 +9,7 @@
  * file that was distributed with this source code.
  */
 
-namespace Symfony\AI\Store\Bridge\Local;
+namespace Symfony\AI\Store\Bridge\InMemory;
 
 use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Distance\DistanceCalculator;
@@ -21,7 +21,7 @@ use Symfony\AI\Store\StoreInterface;
 /**
  * @author Guillaume Loulier <personal@guillaumeloulier.fr>
  */
-class InMemoryStore implements ManagedStoreInterface, StoreInterface
+class Store implements ManagedStoreInterface, StoreInterface
 {
     /**
      * @var VectorDocument[]
