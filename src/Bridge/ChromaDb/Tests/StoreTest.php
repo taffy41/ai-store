@@ -12,8 +12,8 @@
 namespace Symfony\AI\Store\Bridge\ChromaDb\Tests;
 
 use Codewithkyrian\ChromaDB\Client;
-use Codewithkyrian\ChromaDB\Generated\Responses\QueryItemsResponse;
-use Codewithkyrian\ChromaDB\Resources\CollectionResource;
+use Codewithkyrian\ChromaDB\Models\Collection;
+use Codewithkyrian\ChromaDB\Responses\QueryItemsResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Symfony\AI\Platform\Vector\Vector;
@@ -39,7 +39,7 @@ final class StoreTest extends TestCase
         array $expectedMetadata,
         array $expectedOriginalDocuments,
     ): void {
-        $collection = $this->createMock(CollectionResource::class);
+        $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
 
         $client->expects($this->once())
@@ -146,7 +146,7 @@ final class StoreTest extends TestCase
             distances: null
         );
 
-        $collection = $this->createMock(CollectionResource::class);
+        $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
 
         $client->expects($this->once())
@@ -159,7 +159,6 @@ final class StoreTest extends TestCase
             ->with(
                 [[0.15, 0.25, 0.35]],  // queryEmbeddings
                 null,                  // queryTexts
-                null,                  // queryImages
                 4,                     // nResults
                 null,                  // where
                 null,                  // whereDocument
@@ -191,7 +190,7 @@ final class StoreTest extends TestCase
             distances: null
         );
 
-        $collection = $this->createMock(CollectionResource::class);
+        $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
 
         $client->expects($this->once())
@@ -204,7 +203,6 @@ final class StoreTest extends TestCase
             ->with(
                 [[0.15, 0.25, 0.35]],  // queryEmbeddings
                 null,                  // queryTexts
-                null,                  // queryImages
                 4,                     // nResults
                 ['category' => 'technology'],  // where
                 null,                  // whereDocument
@@ -235,7 +233,7 @@ final class StoreTest extends TestCase
             distances: null
         );
 
-        $collection = $this->createMock(CollectionResource::class);
+        $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
 
         $client->expects($this->once())
@@ -248,7 +246,6 @@ final class StoreTest extends TestCase
             ->with(
                 [[0.15, 0.25, 0.35]],  // queryEmbeddings
                 null,                  // queryTexts
-                null,                  // queryImages
                 4,                     // nResults
                 null,                  // where
                 ['$contains' => 'machine learning'],  // whereDocument
@@ -280,7 +277,7 @@ final class StoreTest extends TestCase
             distances: null
         );
 
-        $collection = $this->createMock(CollectionResource::class);
+        $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
 
         $client->expects($this->once())
@@ -293,7 +290,6 @@ final class StoreTest extends TestCase
             ->with(
                 [[0.15, 0.25, 0.35]],  // queryEmbeddings
                 null,                  // queryTexts
-                null,                  // queryImages
                 4,                     // nResults
                 ['category' => 'AI', 'status' => 'published'],  // where
                 ['$contains' => 'neural networks'],  // whereDocument
@@ -327,7 +323,7 @@ final class StoreTest extends TestCase
             distances: null
         );
 
-        $collection = $this->createMock(CollectionResource::class);
+        $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
 
         $client->expects($this->once())
@@ -340,7 +336,6 @@ final class StoreTest extends TestCase
             ->with(
                 [[0.15, 0.25, 0.35]],  // queryEmbeddings
                 null,                  // queryTexts
-                null,                  // queryImages
                 4,                     // nResults
                 ['category' => 'nonexistent'],  // where
                 null,                  // whereDocument
@@ -367,7 +362,7 @@ final class StoreTest extends TestCase
             distances: [[0.123, 0.456]]
         );
 
-        $collection = $this->createMock(CollectionResource::class);
+        $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
 
         $client->expects($this->once())
@@ -400,7 +395,7 @@ final class StoreTest extends TestCase
             distances: null
         );
 
-        $collection = $this->createMock(CollectionResource::class);
+        $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
 
         $client->expects($this->once())
@@ -442,7 +437,7 @@ final class StoreTest extends TestCase
             distances: null
         );
 
-        $collection = $this->createMock(CollectionResource::class);
+        $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
 
         $client->expects($this->once())
@@ -455,7 +450,6 @@ final class StoreTest extends TestCase
             ->with(
                 [[0.1, 0.2, 0.3]],     // queryEmbeddings
                 null,                  // queryTexts
-                null,                  // queryImages
                 4,                     // nResults
                 $expectedWhere,        // where
                 $expectedWhereDocument,// whereDocument
@@ -482,7 +476,7 @@ final class StoreTest extends TestCase
             distances: null
         );
 
-        $collection = $this->createMock(CollectionResource::class);
+        $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
 
         $client->expects($this->once())
@@ -516,7 +510,7 @@ final class StoreTest extends TestCase
             distances: null
         );
 
-        $collection = $this->createMock(CollectionResource::class);
+        $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
 
         $client->expects($this->once())
@@ -550,7 +544,7 @@ final class StoreTest extends TestCase
             distances: null
         );
 
-        $collection = $this->createMock(CollectionResource::class);
+        $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
 
         $client->expects($this->once())
@@ -640,5 +634,49 @@ final class StoreTest extends TestCase
                 ],
             ],
         ];
+    }
+
+    public function testQueryWithQueryTexts()
+    {
+        $queryVector = new Vector([0.15, 0.25, 0.35]);
+        $queryTexts = ['search for this text'];
+
+        $queryResponse = new QueryItemsResponse(
+            ids: [['01234567-89ab-cdef-0123-456789abcdef']],
+            embeddings: [[[0.1, 0.2, 0.3]]],
+            metadatas: [[['title' => 'Doc 1']]],
+            documents: null,
+            data: null,
+            uris: null,
+            distances: [[0.123]]
+        );
+
+        $collection = $this->createMock(Collection::class);
+        $client = $this->createMock(Client::class);
+
+        $client->expects($this->once())
+            ->method('getOrCreateCollection')
+            ->with('test-collection')
+            ->willReturn($collection);
+
+        $collection->expects($this->once())
+            ->method('query')
+            ->with(
+                [[0.15, 0.25, 0.35]],       // queryEmbeddings
+                ['search for this text'],   // queryTexts
+                4,                          // nResults
+                null,                       // where
+                null,                       // whereDocument
+                null                        // include
+            )
+            ->willReturn($queryResponse);
+
+        $store = new Store($client, 'test-collection');
+        $documents = iterator_to_array($store->query($queryVector, ['queryTexts' => $queryTexts]));
+
+        $this->assertCount(1, $documents);
+        $this->assertSame('01234567-89ab-cdef-0123-456789abcdef', (string) $documents[0]->id);
+        $this->assertSame([0.1, 0.2, 0.3], $documents[0]->vector->getData());
+        $this->assertSame(0.123, $documents[0]->score);
     }
 }

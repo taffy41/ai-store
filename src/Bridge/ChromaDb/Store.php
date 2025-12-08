@@ -45,11 +45,13 @@ final class Store implements StoreInterface
         }
 
         $collection = $this->client->getOrCreateCollection($this->collectionName);
+
+        // @phpstan-ignore argument.type (chromadb-php library has incorrect PHPDoc type for $metadatas parameter)
         $collection->add($ids, $vectors, $metadata, $originalDocuments);
     }
 
     /**
-     * @param array{where?: array<string, string>, whereDocument?: array<string, mixed>, include?: array<string>} $options
+     * @param array{where?: array<string, string>, whereDocument?: array<string, mixed>, include?: array<string>, queryTexts?: array<string>} $options
      */
     public function query(Vector $vector, array $options = []): iterable
     {
@@ -65,6 +67,7 @@ final class Store implements StoreInterface
         $collection = $this->client->getOrCreateCollection($this->collectionName);
         $queryResponse = $collection->query(
             queryEmbeddings: [$vector->getData()],
+            queryTexts: $options['queryTexts'] ?? null,
             nResults: 4,
             where: $options['where'] ?? null,
             whereDocument: $options['whereDocument'] ?? null,
