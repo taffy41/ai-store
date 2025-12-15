@@ -5,6 +5,7 @@ parameters:
     level: 6
     paths:
         - SearchStore.php
+        - Tests/
     treatPhpDocTypesAsCertain: false
     ignoreErrors:
         -

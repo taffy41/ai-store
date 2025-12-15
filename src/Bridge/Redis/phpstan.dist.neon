@@ -6,6 +6,7 @@ parameters:
     paths:
         - Store.php
         - Distance.php
+        - Tests/
     treatPhpDocTypesAsCertain: false
     ignoreErrors:
         -
