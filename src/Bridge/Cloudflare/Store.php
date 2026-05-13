@@ -16,6 +16,7 @@ use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
+use Symfony\AI\Store\Exception\RuntimeException;
 use Symfony\AI\Store\Exception\UnsupportedQueryTypeException;
 use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\Query\QueryInterface;
@@ -30,12 +31,9 @@ final class Store implements ManagedStoreInterface, StoreInterface
 {
     public function __construct(
         private readonly HttpClientInterface $httpClient,
-        private readonly string $accountId,
-        #[\SensitiveParameter] private readonly string $apiKey,
         private readonly string $index,
         private readonly int $dimensions = 1536,
         private readonly string $metric = 'cosine',
-        private readonly string $endpointUrl = 'https://api.cloudflare.com/client/v4/accounts',
     ) {
     }
 
@@ -106,7 +104,21 @@ final class Store implements ManagedStoreInterface, StoreInterface
             'returnMetadata' => 'all',
         ]);
 
-        foreach ($results['result']['matches'] as $item) {
+        $result = $results['result'] ?? null;
+        if (!\is_array($result)) {
+            throw new RuntimeException('The Cloudflare search response is malformed.');
+        }
+
+        $matches = $result['matches'] ?? null;
+        if (!\is_array($matches)) {
+            throw new RuntimeException('The Cloudflare search response does not contain a result set.');
+        }
+
+        foreach ($matches as $item) {
+            if (!\is_array($item)) {
+                throw new RuntimeException('The Cloudflare search response contains an invalid match.');
+            }
+
             yield $this->convertToVectorDocument($item);
         }
     }
@@ -114,15 +126,11 @@ final class Store implements ManagedStoreInterface, StoreInterface
     /**
      * @param array<string, mixed> $payload
      *
-     * @return array<string, mixed>
+     * @return array<mixed>
      */
     private function request(string $method, string $endpoint, \Closure|array $payload = []): array
     {
-        $url = \sprintf('%s/%s/%s', $this->endpointUrl, $this->accountId, $endpoint);
-
-        $options = [
-            'auth_bearer' => $this->apiKey,
-        ];
+        $options = [];
 
         if ($payload instanceof \Closure) {
             $options['headers'] = [
@@ -136,7 +144,7 @@ final class Store implements ManagedStoreInterface, StoreInterface
             $options['json'] = $payload;
         }
 
-        $response = $this->httpClient->request($method, $url, $options);
+        $response = $this->httpClient->request($method, $endpoint, $options);
 
         return $response->toArray();
     }
@@ -154,21 +162,59 @@ final class Store implements ManagedStoreInterface, StoreInterface
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param array<mixed> $data
      */
     private function convertToVectorDocument(array $data): VectorDocument
     {
         $id = $data['id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data.');
+        if (!\is_string($id) && !\is_int($id)) {
+            throw new InvalidArgumentException('The document "id" field must be a string or an integer.');
+        }
 
-        $vector = !\array_key_exists('values', $data) || null === $data['values']
-            ? new NullVector()
-            : new Vector($data['values']);
+        $rawVector = $data['values'] ?? null;
+        if (null === $rawVector) {
+            $vector = new NullVector();
+        } else {
+            if (!\is_array($rawVector)) {
+                throw new InvalidArgumentException('The document vector must be an array of numbers.');
+            }
+
+            $components = [];
+            foreach ($rawVector as $component) {
+                if (!\is_int($component) && !\is_float($component)) {
+                    throw new InvalidArgumentException('The document vector must contain only numbers.');
+                }
+
+                $components[] = (float) $component;
+            }
+
+            $vector = new Vector($components);
+        }
+
+        $rawMetadata = $data['metadata'] ?? [];
+        if (!\is_array($rawMetadata)) {
+            throw new InvalidArgumentException('The document metadata must be an array.');
+        }
+
+        $metadata = [];
+        foreach ($rawMetadata as $key => $value) {
+            if (!\is_string($key)) {
+                throw new InvalidArgumentException('The document metadata must be keyed by strings.');
+            }
+
+            $metadata[$key] = $value;
+        }
+
+        $score = $data['score'] ?? null;
+        if (null !== $score && !\is_int($score) && !\is_float($score)) {
+            throw new InvalidArgumentException('The document "score" field must be a number.');
+        }
 
         return new VectorDocument(
             id: $id,
             vector: $vector,
-            metadata: new Metadata($data['metadata']),
-            score: $data['score'] ?? null
+            metadata: new Metadata($metadata),
+            score: null === $score ? null : (float) $score,
         );
     }
 }

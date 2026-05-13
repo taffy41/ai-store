@@ -26,14 +26,11 @@ use Symfony\Component\Uid\Uuid;
 
 final class StoreTest extends TestCase
 {
+    private const BASE_URI = 'https://api.cloudflare.com/client/v4/accounts/foo/';
+
     public function testStoreCannotSetupWithExtraOptions()
     {
-        $store = new Store(
-            new MockHttpClient(),
-            'foo',
-            'bar',
-            'random'
-        );
+        $store = new Store(new MockHttpClient(), 'random');
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('No supported options.');
@@ -49,14 +46,9 @@ final class StoreTest extends TestCase
             new JsonMockResponse([], [
                 'http_code' => 400,
             ]),
-        ]);
+        ], self::BASE_URI);
 
-        $store = new Store(
-            $mockHttpClient,
-            'foo',
-            'bar',
-            'random',
-        );
+        $store = new Store($mockHttpClient, 'random');
 
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('HTTP 400 returned for "https://api.cloudflare.com/client/v4/accounts/foo/vectorize/v2/indexes".');
@@ -76,14 +68,9 @@ final class StoreTest extends TestCase
                     'name' => 'random',
                 ],
             ]),
-        ]);
+        ], self::BASE_URI);
 
-        $store = new Store(
-            $mockHttpClient,
-            'foo',
-            'bar',
-            'random',
-        );
+        $store = new Store($mockHttpClient, 'random');
 
         $store->setup();
 
@@ -96,14 +83,9 @@ final class StoreTest extends TestCase
             new JsonMockResponse([], [
                 'http_code' => 400,
             ]),
-        ]);
+        ], self::BASE_URI);
 
-        $store = new Store(
-            $mockHttpClient,
-            'foo',
-            'bar',
-            'random',
-        );
+        $store = new Store($mockHttpClient, 'random');
 
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('HTTP 400 returned for "https://api.cloudflare.com/client/v4/accounts/foo/vectorize/v2/indexes/random".');
@@ -122,14 +104,9 @@ final class StoreTest extends TestCase
                 'result' => [],
                 'success' => true,
             ]),
-        ]);
+        ], self::BASE_URI);
 
-        $store = new Store(
-            $mockHttpClient,
-            'foo',
-            'bar',
-            'random',
-        );
+        $store = new Store($mockHttpClient, 'random');
 
         $store->drop();
 
@@ -142,14 +119,9 @@ final class StoreTest extends TestCase
             new JsonMockResponse([], [
                 'http_code' => 400,
             ]),
-        ]);
+        ], self::BASE_URI);
 
-        $store = new Store(
-            $mockHttpClient,
-            'foo',
-            'bar',
-            'random',
-        );
+        $store = new Store($mockHttpClient, 'random');
 
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('HTTP 400 returned for "https://api.cloudflare.com/client/v4/accounts/foo/vectorize/v2/indexes/random/upsert".');
@@ -168,14 +140,9 @@ final class StoreTest extends TestCase
             ], [
                 'http_code' => 200,
             ]),
-        ]);
+        ], self::BASE_URI);
 
-        $store = new Store(
-            $mockHttpClient,
-            'foo',
-            'bar',
-            'random',
-        );
+        $store = new Store($mockHttpClient, 'random');
 
         $store->add([new VectorDocument(Uuid::v4(), new Vector([0.1, 0.2, 0.3]))]);
 
@@ -188,14 +155,9 @@ final class StoreTest extends TestCase
             new JsonMockResponse([], [
                 'http_code' => 400,
             ]),
-        ]);
+        ], self::BASE_URI);
 
-        $store = new Store(
-            $mockHttpClient,
-            'foo',
-            'bar',
-            'random',
-        );
+        $store = new Store($mockHttpClient, 'random');
 
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('HTTP 400 returned for "https://api.cloudflare.com/client/v4/accounts/foo/vectorize/v2/indexes/random/query".');
@@ -226,14 +188,9 @@ final class StoreTest extends TestCase
             ], [
                 'http_code' => 200,
             ]),
-        ]);
+        ], self::BASE_URI);
 
-        $store = new Store(
-            $mockHttpClient,
-            'foo',
-            'bar',
-            'random',
-        );
+        $store = new Store($mockHttpClient, 'random');
 
         $results = iterator_to_array($store->query(new VectorQuery(new Vector([0.1, 0.2, 0.3]))));
 
@@ -247,14 +204,9 @@ final class StoreTest extends TestCase
             new JsonMockResponse([], [
                 'http_code' => 400,
             ]),
-        ]);
+        ], self::BASE_URI);
 
-        $store = new Store(
-            $mockHttpClient,
-            'foo',
-            'bar',
-            'random',
-        );
+        $store = new Store($mockHttpClient, 'random');
 
         $this->expectException(ClientException::class);
         $this->expectExceptionMessage('HTTP 400 returned for "https://api.cloudflare.com/client/v4/accounts/foo/vectorize/v2/indexes/random/delete_by_ids".');
@@ -273,14 +225,9 @@ final class StoreTest extends TestCase
             ], [
                 'http_code' => 200,
             ]),
-        ]);
+        ], self::BASE_URI);
 
-        $store = new Store(
-            $mockHttpClient,
-            'foo',
-            'bar',
-            'random',
-        );
+        $store = new Store($mockHttpClient, 'random');
 
         $store->remove('id1');
 
@@ -298,14 +245,9 @@ final class StoreTest extends TestCase
             ], [
                 'http_code' => 200,
             ]),
-        ]);
+        ], self::BASE_URI);
 
-        $store = new Store(
-            $mockHttpClient,
-            'foo',
-            'bar',
-            'random',
-        );
+        $store = new Store($mockHttpClient, 'random');
 
         $store->remove(['id1', 'id2', 'id3']);
 
@@ -314,19 +256,19 @@ final class StoreTest extends TestCase
 
     public function testStoreSupportsVectorQuery()
     {
-        $store = new Store(new MockHttpClient(), 'account-id', 'index-name', 'api-key');
+        $store = new Store(new MockHttpClient(), 'test_index');
         $this->assertTrue($store->supports(VectorQuery::class));
     }
 
     public function testStoreDoesNotSupportTextQuery()
     {
-        $store = new Store(new MockHttpClient(), 'account-id', 'index-name', 'api-key');
+        $store = new Store(new MockHttpClient(), 'test_index');
         $this->assertFalse($store->supports(TextQuery::class));
     }
 
     public function testStoreDoesNotSupportHybridQuery()
     {
-        $store = new Store(new MockHttpClient(), 'account-id', 'index-name', 'api-key');
+        $store = new Store(new MockHttpClient(), 'test_index');
         $this->assertFalse($store->supports(HybridQuery::class));
     }
 }
