@@ -16,6 +16,7 @@ use Symfony\AI\Platform\Vector\Vector;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
+use Symfony\AI\Store\Exception\RuntimeException;
 use Symfony\AI\Store\Exception\UnsupportedQueryTypeException;
 use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\Query\QueryInterface;
@@ -30,8 +31,6 @@ final class Store implements ManagedStoreInterface, StoreInterface
 {
     public function __construct(
         private readonly HttpClientInterface $httpClient,
-        private readonly string $endpointUrl,
-        #[\SensitiveParameter] private readonly string $apiKey,
         private readonly string $collection,
         private readonly string $vectorFieldName = '_vectors',
         private readonly int $embeddingsDimension = 1536,
@@ -114,17 +113,42 @@ final class Store implements ManagedStoreInterface, StoreInterface
         }
 
         $vector = $query->getVector();
+
+        $k = $options['k'] ?? 10;
+        if (!\is_int($k)) {
+            throw new InvalidArgumentException('The "k" option must be an integer.');
+        }
+
         $documents = $this->request('POST', 'multi_search', [
             'searches' => [
                 [
                     'collection' => $this->collection,
                     'q' => '*',
-                    'vector_query' => \sprintf('%s:([%s], k:%d)', $this->vectorFieldName, implode(', ', $vector->getData()), $options['k'] ?? 10),
+                    'vector_query' => \sprintf('%s:([%s], k:%d)', $this->vectorFieldName, implode(', ', $vector->getData()), $k),
                 ],
             ],
         ]);
 
-        foreach ($documents['results'][0]['hits'] as $item) {
+        $results = $documents['results'] ?? null;
+        if (!\is_array($results)) {
+            throw new RuntimeException('The Typesense search response is malformed.');
+        }
+
+        $firstResult = $results[0] ?? null;
+        if (!\is_array($firstResult)) {
+            throw new RuntimeException('The Typesense search response does not contain a result set.');
+        }
+
+        $hits = $firstResult['hits'] ?? null;
+        if (!\is_array($hits)) {
+            throw new RuntimeException('The Typesense search response does not contain hits.');
+        }
+
+        foreach ($hits as $item) {
+            if (!\is_array($item)) {
+                throw new RuntimeException('The Typesense search response contains an invalid hit.');
+            }
+
             yield $this->convertToVectorDocument($item);
         }
     }
@@ -137,15 +161,11 @@ final class Store implements ManagedStoreInterface, StoreInterface
     /**
      * @param array<string, mixed> $payload
      *
-     * @return array<string, mixed>
+     * @return array<mixed>
      */
     private function request(string $method, string $endpoint, array $payload): array
     {
-        $url = \sprintf('%s/%s', $this->endpointUrl, $endpoint);
-        $result = $this->httpClient->request($method, $url, [
-            'headers' => [
-                'X-TYPESENSE-API-KEY' => $this->apiKey,
-            ],
+        $result = $this->httpClient->request($method, $endpoint, [
             'json' => [] !== $payload ? $payload : new \stdClass(),
         ]);
 
@@ -165,20 +185,69 @@ final class Store implements ManagedStoreInterface, StoreInterface
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param array<mixed> $data
      */
     private function convertToVectorDocument(array $data): VectorDocument
     {
         $document = $data['document'] ?? throw new InvalidArgumentException('Missing "document" field in the document data.');
+        if (!\is_array($document)) {
+            throw new InvalidArgumentException('The "document" field must be an array.');
+        }
 
         $id = $document['id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data.');
+        if (!\is_string($id) && !\is_int($id)) {
+            throw new InvalidArgumentException('The document "id" field must be a string or an integer.');
+        }
 
-        $vector = !\array_key_exists($this->vectorFieldName, $document) || null === $document[$this->vectorFieldName]
-            ? new NullVector()
-            : new Vector($document[$this->vectorFieldName]);
+        $rawVector = $document[$this->vectorFieldName] ?? null;
+        if (null === $rawVector) {
+            $vector = new NullVector();
+        } else {
+            if (!\is_array($rawVector)) {
+                throw new InvalidArgumentException('The document vector must be an array of numbers.');
+            }
+
+            $components = [];
+            foreach ($rawVector as $component) {
+                if (!\is_int($component) && !\is_float($component)) {
+                    throw new InvalidArgumentException('The document vector must contain only numbers.');
+                }
+
+                $components[] = (float) $component;
+            }
+
+            $vector = new Vector($components);
+        }
+
+        $rawMetadata = $document['metadata'] ?? null;
+        if (!\is_string($rawMetadata)) {
+            throw new InvalidArgumentException('The document metadata must be a JSON encoded string.');
+        }
+
+        $metadata = json_decode($rawMetadata, true);
+        if (!\is_array($metadata)) {
+            throw new InvalidArgumentException('The document metadata is not a valid JSON object.');
+        }
+
+        $normalizedMetadata = [];
+        foreach ($metadata as $key => $value) {
+            if (!\is_string($key)) {
+                throw new InvalidArgumentException('The document metadata must be keyed by strings.');
+            }
+
+            $normalizedMetadata[$key] = $value;
+        }
 
         $score = $data['vector_distance'] ?? null;
+        if (null !== $score && !\is_int($score) && !\is_float($score)) {
+            throw new InvalidArgumentException('The document "vector_distance" field must be a number.');
+        }
 
-        return new VectorDocument($id, $vector, new Metadata(json_decode($document['metadata'], true)), $score);
+        return new VectorDocument(
+            $id,
+            $vector,
+            new Metadata($normalizedMetadata),
+            null === $score ? null : (float) $score,
+        );
     }
 }
