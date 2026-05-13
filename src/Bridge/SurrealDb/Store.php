@@ -31,14 +31,8 @@ final class Store implements ManagedStoreInterface, StoreInterface
 {
     private string $authenticationToken = '';
 
-    private readonly string $endpoint;
-
-    /**
-     * @param string $endpoint URL of the SurrealDB instance, with or without a trailing slash
-     */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
-        string $endpoint,
         private readonly string $user,
         #[\SensitiveParameter] private readonly string $password,
         private readonly string $namespace,
@@ -49,7 +43,6 @@ final class Store implements ManagedStoreInterface, StoreInterface
         private readonly int $embeddingsDimension = 1536,
         private readonly bool $isNamespacedUser = false,
     ) {
-        $this->endpoint = rtrim($endpoint, '/');
     }
 
     public function setup(array $options = []): void
@@ -106,7 +99,21 @@ final class Store implements ManagedStoreInterface, StoreInterface
             $this->vectorFieldName, $this->strategy, $this->vectorFieldName, $vectors, $this->table, $this->vectorFieldName, $vectors,
         ));
 
-        foreach ($results[0]['result'] as $item) {
+        $statement = $results[0] ?? null;
+        if (!\is_array($statement)) {
+            throw new RuntimeException('The SurrealDB query response is malformed.');
+        }
+
+        $rows = $statement['result'] ?? null;
+        if (!\is_array($rows)) {
+            throw new RuntimeException('The SurrealDB query response does not contain a result set.');
+        }
+
+        foreach ($rows as $item) {
+            if (!\is_array($item)) {
+                throw new RuntimeException('The SurrealDB query response contains an invalid row.');
+            }
+
             yield $this->convertToVectorDocument($item);
         }
     }
@@ -134,8 +141,6 @@ final class Store implements ManagedStoreInterface, StoreInterface
      */
     private function request(string $method, string $endpoint, array|string $payload): array
     {
-        $url = \sprintf('%s/%s', $this->endpoint, $endpoint);
-
         $finalPayload = [];
 
         if (\is_array($payload) && [] !== $payload) {
@@ -150,7 +155,7 @@ final class Store implements ManagedStoreInterface, StoreInterface
             ];
         }
 
-        $response = $this->httpClient->request($method, $url, [
+        $response = $this->httpClient->request($method, $endpoint, [
             ...$finalPayload,
             ...[
                 'headers' => [
@@ -181,22 +186,55 @@ final class Store implements ManagedStoreInterface, StoreInterface
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param array<mixed> $data
      */
     private function convertToVectorDocument(array $data): VectorDocument
     {
-        $id = $data['_metadata']['_id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data.');
+        $rawMetadata = $data['_metadata'] ?? null;
+        if (!\is_array($rawMetadata)) {
+            throw new InvalidArgumentException('Missing "_metadata" field in the document data.');
+        }
 
-        $vector = !\array_key_exists($this->vectorFieldName, $data) || null === $data[$this->vectorFieldName]
-            ? new NullVector()
-            : new Vector($data[$this->vectorFieldName]);
+        $metadata = [];
+        foreach ($rawMetadata as $key => $value) {
+            if (!\is_string($key)) {
+                throw new InvalidArgumentException('The document metadata must be keyed by strings.');
+            }
 
-        unset($data['_metadata']['_id']);
+            $metadata[$key] = $value;
+        }
+
+        $id = $metadata['_id'] ?? throw new InvalidArgumentException('Missing "id" field in the document data.');
+        if (!\is_string($id) && !\is_int($id)) {
+            throw new InvalidArgumentException('The document "id" field must be a string or an integer.');
+        }
+
+        $rawVector = $data[$this->vectorFieldName] ?? null;
+        if (null === $rawVector) {
+            $vector = new NullVector();
+        } else {
+            if (!\is_array($rawVector)) {
+                throw new InvalidArgumentException('The document vector must be an array of numbers.');
+            }
+
+            $components = [];
+            foreach ($rawVector as $component) {
+                if (!\is_int($component) && !\is_float($component)) {
+                    throw new InvalidArgumentException('The document vector must contain only numbers.');
+                }
+
+                $components[] = (float) $component;
+            }
+
+            $vector = new Vector($components);
+        }
+
+        unset($metadata['_id']);
 
         return new VectorDocument(
             id: $id,
             vector: $vector,
-            metadata: new Metadata($data['_metadata']),
+            metadata: new Metadata($metadata),
         );
     }
 
@@ -216,7 +254,7 @@ final class Store implements ManagedStoreInterface, StoreInterface
             $authenticationPayload['db'] = $this->database;
         }
 
-        $authenticationResponse = $this->httpClient->request('POST', \sprintf('%s/signin', $this->endpoint), [
+        $authenticationResponse = $this->httpClient->request('POST', 'signin', [
             'headers' => [
                 'Accept' => 'application/json',
             ],
@@ -225,10 +263,11 @@ final class Store implements ManagedStoreInterface, StoreInterface
 
         $payload = $authenticationResponse->toArray();
 
-        if (!\array_key_exists('token', $payload)) {
-            throw new RuntimeException('The SurrealDB authentication response does not contain a token.');
+        $token = $payload['token'] ?? null;
+        if (!\is_string($token)) {
+            throw new RuntimeException('The SurrealDB authentication response does not contain a valid token.');
         }
 
-        $this->authenticationToken = $payload['token'];
+        $this->authenticationToken = $token;
     }
 }
