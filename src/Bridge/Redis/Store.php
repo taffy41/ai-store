@@ -25,7 +25,7 @@ use Symfony\AI\Store\StoreInterface;
 /**
  * @author Grégoire Pineau <lyrixx@lyrixx.info>
  */
-class Store implements ManagedStoreInterface, StoreInterface
+final class Store implements ManagedStoreInterface, StoreInterface
 {
     public function __construct(
         private readonly \Redis $redis,
