@@ -15,6 +15,8 @@ use PHPUnit\Framework\TestCase;
 use Symfony\AI\Store\Bridge\Typesense\Store;
 use Symfony\AI\Store\Bridge\Typesense\StoreFactory;
 use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Component\HttpClient\MockHttpClient;
+use Symfony\Component\HttpClient\Response\JsonMockResponse;
 use Symfony\Component\HttpClient\ScopingHttpClient;
 
 final class StoreFactoryTest extends TestCase
@@ -35,5 +37,21 @@ final class StoreFactoryTest extends TestCase
         ]));
 
         $this->assertInstanceOf(Store::class, $store);
+    }
+
+    public function testStoreKeepsPathPrefixWithoutTrailingSlash()
+    {
+        $resolvedUrl = null;
+
+        $httpClient = new MockHttpClient(static function (string $method, string $url) use (&$resolvedUrl): JsonMockResponse {
+            $resolvedUrl = $url;
+
+            return new JsonMockResponse([], ['http_code' => 200]);
+        });
+
+        $store = StoreFactory::create('foo', 'http://localhost:8108/proxy', httpClient: $httpClient);
+        $store->drop();
+
+        $this->assertSame('http://localhost:8108/proxy/collections/foo', $resolvedUrl);
     }
 }

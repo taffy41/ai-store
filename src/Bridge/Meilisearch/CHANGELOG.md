@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.11
+----
+
+ * Normalize the `endpoint` URL and tolerate a missing trailing slash on path-prefixed endpoints
+
 0.9
 ---
 

@@ -38,6 +38,8 @@ final class StoreFactory
                 $defaultOptions['auth_bearer'] = $apiKey;
             }
 
+            $endpoint = rtrim($endpoint, '/').'/';
+
             $httpClient = ScopingHttpClient::forBaseUri($httpClient ?? HttpClient::create(), $endpoint, $defaultOptions);
         }
 

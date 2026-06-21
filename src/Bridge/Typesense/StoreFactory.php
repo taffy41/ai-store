@@ -40,6 +40,8 @@ final class StoreFactory
                 ];
             }
 
+            $endpoint = rtrim($endpoint, '/').'/';
+
             $httpClient = ScopingHttpClient::forBaseUri($httpClient, $endpoint, $defaultOptions);
         }
 

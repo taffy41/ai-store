@@ -28,14 +28,20 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 final class Store implements ManagedStoreInterface, StoreInterface
 {
+    private readonly string $endpoint;
+
+    /**
+     * @param string $endpoint URL of the OpenSearch instance, with or without a trailing slash
+     */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
-        private readonly string $endpoint,
+        string $endpoint,
         private readonly string $indexName,
         private readonly string $vectorsField = '_vectors',
         private readonly int $dimensions = 1536,
         private readonly string $spaceType = 'l2',
     ) {
+        $this->endpoint = rtrim($endpoint, '/');
     }
 
     public function setup(array $options = []): void

@@ -92,6 +92,29 @@ final class StoreTest extends TestCase
         $this->assertSame(2, $httpClient->getRequestsCount());
     }
 
+    public function testStoreNormalizesTrailingSlashOnEndpoint()
+    {
+        $requestedUrls = [];
+        $httpClient = new MockHttpClient(static function (string $method, string $url) use (&$requestedUrls): JsonMockResponse {
+            $requestedUrls[] = $url;
+
+            if (str_ends_with($url, '/signin')) {
+                return new JsonMockResponse(['token' => 'bar'], ['http_code' => 200]);
+            }
+
+            return new JsonMockResponse([['result' => 'OK', 'status' => 'OK']], ['http_code' => 200]);
+        });
+
+        $store = new Store($httpClient, 'http://127.0.0.1:8000/', 'test', 'test', 'test', 'test');
+
+        $store->setup();
+
+        $this->assertSame([
+            'http://127.0.0.1:8000/signin',
+            'http://127.0.0.1:8000/sql',
+        ], $requestedUrls);
+    }
+
     public function testStoreCannotDropOnInvalidResponse()
     {
         $httpClient = new MockHttpClient([

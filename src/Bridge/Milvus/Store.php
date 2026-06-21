@@ -28,9 +28,14 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 final class Store implements ManagedStoreInterface, StoreInterface
 {
+    private readonly string $endpoint;
+
+    /**
+     * @param string $endpoint URL of the Milvus instance, with or without a trailing slash
+     */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
-        private readonly string $endpointUrl,
+        string $endpoint,
         #[\SensitiveParameter] private readonly string $apiKey,
         private readonly string $database,
         private readonly string $collection,
@@ -38,6 +43,7 @@ final class Store implements ManagedStoreInterface, StoreInterface
         private readonly int $dimensions = 1536,
         private readonly string $metricType = 'COSINE',
     ) {
+        $this->endpoint = rtrim($endpoint, '/');
     }
 
     /**
@@ -168,7 +174,7 @@ final class Store implements ManagedStoreInterface, StoreInterface
      */
     private function request(string $method, string $endpoint, array $payload): array
     {
-        $url = \sprintf('%s/%s', $this->endpointUrl, $endpoint);
+        $url = \sprintf('%s/%s', $this->endpoint, $endpoint);
         $result = $this->httpClient->request($method, $url, [
             'auth_bearer' => $this->apiKey,
             'json' => $payload,

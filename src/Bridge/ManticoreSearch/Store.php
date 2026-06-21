@@ -28,9 +28,14 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  */
 final class Store implements ManagedStoreInterface, StoreInterface
 {
+    private readonly string $endpoint;
+
+    /**
+     * @param string $endpoint URL of the ManticoreSearch instance, with or without a trailing slash
+     */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
-        private readonly string $host,
+        string $endpoint,
         private readonly string $table,
         private readonly string $field = '_vectors',
         private readonly string $type = 'hnsw',
@@ -38,6 +43,7 @@ final class Store implements ManagedStoreInterface, StoreInterface
         private readonly int $dimensions = 1536,
         private readonly string $quantization = '8bit',
     ) {
+        $this->endpoint = rtrim($endpoint, '/');
     }
 
     public function setup(array $options = []): void
@@ -153,9 +159,9 @@ final class Store implements ManagedStoreInterface, StoreInterface
      *
      * @return array<string, mixed>
      */
-    private function request(string $endpoint, \Closure|array|string $query): array
+    private function request(string $route, \Closure|array|string $query): array
     {
-        $options = match ($endpoint) {
+        $options = match ($route) {
             'cli' => [
                 'body' => $query,
             ],
@@ -168,12 +174,12 @@ final class Store implements ManagedStoreInterface, StoreInterface
             'search' => [
                 'json' => $query,
             ],
-            default => throw new InvalidArgumentException(\sprintf('The endpoint "%s" is not supported', $endpoint)),
+            default => throw new InvalidArgumentException(\sprintf('The endpoint "%s" is not supported', $route)),
         };
 
-        $response = $this->httpClient->request('POST', \sprintf('%s/%s', $this->host, $endpoint), $options);
+        $response = $this->httpClient->request('POST', \sprintf('%s/%s', $this->endpoint, $route), $options);
 
-        return 'cli' === $endpoint ? [
+        return 'cli' === $route ? [
             'result' => $response->getContent(),
         ] : $response->toArray();
     }

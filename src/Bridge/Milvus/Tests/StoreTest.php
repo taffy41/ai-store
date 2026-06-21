@@ -81,6 +81,28 @@ final class StoreTest extends TestCase
         $this->assertSame(2, $httpClient->getRequestsCount());
     }
 
+    public function testStoreNormalizesTrailingSlashOnEndpoint()
+    {
+        $requestedUrl = null;
+        $httpClient = new MockHttpClient(static function (string $method, string $url) use (&$requestedUrl): JsonMockResponse {
+            $requestedUrl = $url;
+
+            return new JsonMockResponse(['code' => 0, 'data' => []]);
+        });
+
+        $store = new Store(
+            $httpClient,
+            'http://127.0.0.1:19530/',
+            'test',
+            'test',
+            'test',
+        );
+
+        $store->drop();
+
+        $this->assertSame('http://127.0.0.1:19530/v2/vectordb/databases/drop', $requestedUrl);
+    }
+
     public function testStoreCannotDropOnInvalidResponse()
     {
         $httpClient = new MockHttpClient([

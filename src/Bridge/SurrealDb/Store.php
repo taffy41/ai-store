@@ -31,9 +31,14 @@ final class Store implements ManagedStoreInterface, StoreInterface
 {
     private string $authenticationToken = '';
 
+    private readonly string $endpoint;
+
+    /**
+     * @param string $endpoint URL of the SurrealDB instance, with or without a trailing slash
+     */
     public function __construct(
         private readonly HttpClientInterface $httpClient,
-        private readonly string $endpointUrl,
+        string $endpoint,
         private readonly string $user,
         #[\SensitiveParameter] private readonly string $password,
         private readonly string $namespace,
@@ -44,6 +49,7 @@ final class Store implements ManagedStoreInterface, StoreInterface
         private readonly int $embeddingsDimension = 1536,
         private readonly bool $isNamespacedUser = false,
     ) {
+        $this->endpoint = rtrim($endpoint, '/');
     }
 
     public function setup(array $options = []): void
@@ -128,7 +134,7 @@ final class Store implements ManagedStoreInterface, StoreInterface
      */
     private function request(string $method, string $endpoint, array|string $payload): array
     {
-        $url = \sprintf('%s/%s', $this->endpointUrl, $endpoint);
+        $url = \sprintf('%s/%s', $this->endpoint, $endpoint);
 
         $finalPayload = [];
 
@@ -210,7 +216,7 @@ final class Store implements ManagedStoreInterface, StoreInterface
             $authenticationPayload['db'] = $this->database;
         }
 
-        $authenticationResponse = $this->httpClient->request('POST', \sprintf('%s/signin', $this->endpointUrl), [
+        $authenticationResponse = $this->httpClient->request('POST', \sprintf('%s/signin', $this->endpoint), [
             'headers' => [
                 'Accept' => 'application/json',
             ],
