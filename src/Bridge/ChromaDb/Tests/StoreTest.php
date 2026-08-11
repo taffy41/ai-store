@@ -12,6 +12,7 @@
 namespace Symfony\AI\Store\Bridge\ChromaDb\Tests;
 
 use Codewithkyrian\ChromaDB\Client;
+use Codewithkyrian\ChromaDB\Embeddings\EmbeddingFunction;
 use Codewithkyrian\ChromaDB\Models\Collection;
 use Codewithkyrian\ChromaDB\Responses\GetItemsResponse;
 use Codewithkyrian\ChromaDB\Responses\QueryItemsResponse;
@@ -22,6 +23,7 @@ use Symfony\AI\Store\Bridge\ChromaDb\StoreFactory;
 use Symfony\AI\Store\Document\Metadata;
 use Symfony\AI\Store\Document\VectorDocument;
 use Symfony\AI\Store\Exception\InvalidArgumentException;
+use Symfony\AI\Store\Exception\UnsupportedQueryTypeException;
 use Symfony\AI\Store\Query\HybridQuery;
 use Symfony\AI\Store\Query\TextQuery;
 use Symfony\AI\Store\Query\VectorQuery;
@@ -828,10 +830,11 @@ final class StoreTest extends TestCase
 
         $collection = $this->createMock(Collection::class);
         $client = $this->createMock(Client::class);
+        $embeddingFunction = $this->createMock(EmbeddingFunction::class);
 
         $client->expects($this->once())
             ->method('getOrCreateCollection')
-            ->with('test-collection')
+            ->with('test-collection', null, $embeddingFunction)
             ->willReturn($collection);
 
         $collection->expects($this->once())
@@ -846,7 +849,7 @@ final class StoreTest extends TestCase
             )
             ->willReturn($queryResponse);
 
-        $store = StoreFactory::create($client, 'test-collection');
+        $store = StoreFactory::create($client, 'test-collection', $embeddingFunction);
         $documents = iterator_to_array($store->query(new TextQuery('search for this text')));
 
         $this->assertCount(1, $documents);
@@ -866,9 +869,29 @@ final class StoreTest extends TestCase
     public function testStoreSupportsTextQuery()
     {
         $client = $this->createMock(Client::class);
-        $store = StoreFactory::create($client, 'test-collection');
+        $store = StoreFactory::create($client, 'test-collection', $this->createMock(EmbeddingFunction::class));
 
         $this->assertTrue($store->supports(TextQuery::class));
+    }
+
+    public function testStoreDoesNotSupportTextQueryWithoutEmbeddingFunction()
+    {
+        $client = $this->createMock(Client::class);
+        $store = StoreFactory::create($client, 'test-collection');
+
+        $this->assertFalse($store->supports(TextQuery::class));
+    }
+
+    public function testQueryWithTextQueryThrowsWithoutEmbeddingFunction()
+    {
+        $client = $this->createMock(Client::class);
+        $client->expects($this->never())->method('getOrCreateCollection');
+
+        $store = StoreFactory::create($client, 'test-collection');
+
+        $this->expectException(UnsupportedQueryTypeException::class);
+
+        $store->query(new TextQuery('search for this text'));
     }
 
     public function testStoreNotSupportsHybridQuery()

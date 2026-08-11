@@ -12,6 +12,7 @@
 namespace Symfony\AI\Store\Bridge\ChromaDb;
 
 use Codewithkyrian\ChromaDB\Client;
+use Codewithkyrian\ChromaDB\Embeddings\EmbeddingFunction;
 use Codewithkyrian\ChromaDB\Exceptions\ChromaException;
 use Codewithkyrian\ChromaDB\Responses\QueryItemsResponse;
 use Symfony\AI\Platform\Vector\Vector;
@@ -36,6 +37,7 @@ final class Store implements ManagedStoreInterface, StoreInterface
     public function __construct(
         private readonly Client $client,
         private readonly string $collectionName,
+        private readonly ?EmbeddingFunction $embeddingFunction = null,
     ) {
     }
 
@@ -119,10 +121,17 @@ final class Store implements ManagedStoreInterface, StoreInterface
 
     public function supports(string $queryClass): bool
     {
-        return \in_array($queryClass, [
-            VectorQuery::class,
-            TextQuery::class,
-        ], true);
+        if (VectorQuery::class === $queryClass) {
+            return true;
+        }
+
+        // A TextQuery is embedded client-side by the collection's embedding function; without one the
+        // ChromaDB client fatals on a null embedding function before a request is ever sent.
+        if (TextQuery::class === $queryClass) {
+            return null !== $this->embeddingFunction;
+        }
+
+        return false;
     }
 
     /**
@@ -189,7 +198,7 @@ final class Store implements ManagedStoreInterface, StoreInterface
     {
         $include = $this->buildInclude($options);
 
-        $collection = $this->client->getOrCreateCollection($this->collectionName);
+        $collection = $this->client->getOrCreateCollection($this->collectionName, embeddingFunction: $this->embeddingFunction);
         $queryResponse = $collection->query(
             queryTexts: $query->getTexts(),
             nResults: $options['limit'] ?? 4,

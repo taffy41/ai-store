@@ -12,6 +12,7 @@
 namespace Symfony\AI\Store\Bridge\ChromaDb;
 
 use Codewithkyrian\ChromaDB\Client;
+use Codewithkyrian\ChromaDB\Embeddings\EmbeddingFunction;
 use Symfony\AI\Store\ManagedStoreInterface;
 use Symfony\AI\Store\StoreInterface;
 
@@ -23,7 +24,8 @@ final class StoreFactory
     public static function create(
         Client $client,
         string $collectionName,
+        ?EmbeddingFunction $embeddingFunction = null,
     ): ManagedStoreInterface&StoreInterface {
-        return new Store($client, $collectionName);
+        return new Store($client, $collectionName, $embeddingFunction);
     }
 }

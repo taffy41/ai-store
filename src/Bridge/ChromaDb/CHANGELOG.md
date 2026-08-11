@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+0.13
+----
+
+ * Add an optional `EmbeddingFunction` argument to `Store` and `StoreFactory::create()` so a `TextQuery` can be embedded client-side; `supports(TextQuery::class)` now only returns `true` when one is configured
+
 0.8
 ---
 
